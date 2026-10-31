@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZemarShop — En construction</title>
+</head>
+<body>
+  <h1>ZemarShop</h1>
+  <p>Étape 1 : structure en place ✅</p>
+  <p>Ce fichier sera bientôt la vraie page d'accueil.</p>
+
+  <script type="module">
+    import { CONFIG, isSupabaseReady } from './js/config.js';
+    import { initSupabase, getCategories } from './js/supabase-client.js';
+    import { formatPrice } from './js/utils/format.js';
+
+    console.log('[ZemarShop] Config chargée :', CONFIG);
+    console.log('[ZemarShop] Supabase prêt ?', isSupabaseReady());
+
+    await initSupabase();
+
+    const cats = await getCategories();
+    console.log('[ZemarShop] Catégories démo :', cats.length);
+    console.log('[ZemarShop] Exemple prix :', formatPrice(15000));
+  </script>
+</body>
+</html>
