@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ajouter un produit — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/pages/home.css" />
+  <link rel="stylesheet" href="../css/pages/auth.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="auth-page container" style="padding-top: 20px; padding-bottom: 40px;">
+    <div class="auth-card" style="max-width: 700px;">
+      
+      <div class="auth-header" style="text-align: left; margin-bottom: 24px;">
+        <a href="./dashboard.html" style="font-size: 14px; color: var(--color-text-soft); display: inline-flex; align-items: center; gap: 4px; margin-bottom: 12px;">
+          ← Retour au tableau de bord
+        </a>
+        <h1>Ajouter un produit</h1>
+        <p>Publiez un nouvel article dans votre boutique.</p>
+      </div>
+
+      <form id="addProductForm" onsubmit="event.preventDefault();">
+        
+        <div class="field">
+          <label class="field__label">Nom du produit</label>
+          <input type="text" class="field__input" placeholder="Ex: Robe africaine wax" required />
+        </div>
+
+        <div class="field" style="margin-top: 16px;">
+          <label class="field__label">Catégorie</label>
+          <select class="field__select" required>
+            <option value="">Sélectionnez une catégorie</option>
+            <option value="1">Mode homme</option>
+            <option value="2">Mode femme</option>
+            <option value="3">Chaussures</option>
+            <option value="4">Sacs & accessoires</option>
+            <option value="5">Beauté & soins</option>
+            <option value="6">Téléphones</option>
+            <option value="7">Informatique</option>
+            <option value="8">Électronique</option>
+            <option value="9">Maison & déco</option>
+            <option value="10">Sport</option>
+            <option value="11">Enfants</option>
+            <option value="12">Autres</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div class="field">
+            <label class="field__label">Prix de vente (FCFA)</label>
+            <input type="number" class="field__input" placeholder="Ex: 15000" required min="100" />
+          </div>
+          <div class="field">
+            <label class="field__label">Ancien prix (facultatif)</label>
+            <input type="number" class="field__input" placeholder="Ex: 20000" />
+          </div>
+        </div>
+
+        <div class="field" style="margin-top: 16px;">
+          <label class="field__label">Quantité en stock</label>
+          <input type="number" class="field__input" placeholder="Ex: 10" required min="1" />
+        </div>
+
+        <div class="field" style="margin-top: 16px;">
+          <label class="field__label">Lien de l'image (URL)</label>
+          <input type="url" class="field__input" placeholder="https://exemple.com/image.jpg" required />
+          <small style="color: var(--color-text-muted); font-size: 12px; margin-top: 4px;">Pour l'instant, collez un lien depuis Unsplash ou un autre site.</small>
+        </div>
+
+        <div class="field" style="margin-top: 16px;">
+          <label class="field__label">Description du produit</label>
+          <textarea class="field__textarea" placeholder="Décrivez votre produit en détail..." required></textarea>
+        </div>
+
+        <div class="alert alert--info" style="margin-top: 24px;">
+          <span>ℹ️</span>
+          <div>
+            <strong>Validation requise</strong><br>
+            Votre produit sera examiné par un administrateur avant d'être mis en ligne.
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit" style="margin-top: 24px;">
+          Publier le produit
+        </button>
+
+      </form>
+
+    </div>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from '../js/ui/navbar.js';
+    import { renderFooter } from '../js/ui/footer.js';
+
+    renderNavbar('vendor');
+    renderFooter();
+
+    // Simulation de l'ajout de produit
+    document.getElementById('addProductForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmit');
+      
+      btn.textContent = 'Publication en cours...';
+      btn.disabled = true;
+
+      setTimeout(() => {
+        alert("Produit soumis avec succès ! Il est en attente de validation par l'administrateur.");
+        window.location.href = './dashboard.html';
+      }, 1500);
+    });
+  </script>
+</body>
+          </html>
