@@ -1,26 +1,26 @@
 // public/js/ui/navbar.js
-// Génère la navbar ZemarShop et gère le menu mobile
 
 export function renderNavbar(activePage = 'home') {
   const nav = document.getElementById('navbar');
   if (!nav) return;
 
   const links = [
-    { href: './index.html', label: 'Accueil', key: 'home' },
-    { href: './shop.html', label: 'Boutique', key: 'shop' },
-    { href: './shop.html#categories', label: 'Catégories', key: 'categories' },
-    { href: './auth/register-vendor.html', label: 'Devenir vendeur', key: 'vendor' },
-    { href: './contact.html', label: 'Contact', key: 'contact' },
+    { href: 'index.html', label: 'Accueil', key: 'home' },
+    { href: 'shop.html', label: 'Boutique', key: 'shop' },
+    { href: 'shop.html#categories', label: 'Catégories', key: 'categories' },
+    { href: 'auth/register-vendor.html', label: 'Devenir vendeur', key: 'vendor' },
+    { href: 'contact.html', label: 'Contact', key: 'contact' },
   ];
 
-  // Si on est sur une page de l'espace client, on adapte les liens
+  // On détecte si on est dans un sous-dossier (client ou vendor)
   const isClientArea = activePage === 'client';
-  const basePath = isClientArea ? '../' : './';
-  
-  // On ajuste les liens pour qu'ils fonctionnent depuis le dossier /client/
+  const isVendorArea = activePage === 'vendor';
+  const isSubfolder = isClientArea || isVendorArea;
+  const basePath = isSubfolder ? '../' : './';
+
   const adjustedLinks = links.map(l => ({
     ...l,
-    href: isClientArea ? l.href.replace('./', '../') : l.href
+    href: isSubfolder ? '../' + l.href : './' + l.href
   }));
 
   const desktopLinks = adjustedLinks
@@ -31,13 +31,23 @@ export function renderNavbar(activePage = 'home') {
     .map(l => `<a href="${l.href}">${l.label}</a>`)
     .join('');
 
-  // GESTION DU BOUTON CONNEXION / MON COMPTE
-  const authBtnHref = isClientArea ? './dashboard.html' : './login.html';
-  const authBtnText = isClientArea ? 'Mon Compte' : 'Connexion';
-  
-  // Le bouton "Créer un compte" disparaît si on est déjà dans l'espace client
-  const registerBtn = isClientArea ? '' : 
-    `<a href="./register-client.html" class="btn btn--primary btn--sm navbar__hide-mobile">Créer un compte</a>`;
+  // Gestion du bouton d'action selon la page
+  let authBtnHref = './login.html';
+  let authBtnText = 'Connexion';
+  let hideRegister = false;
+
+  if (isClientArea) {
+    authBtnHref = './dashboard.html';
+    authBtnText = 'Mon Compte';
+    hideRegister = true;
+  } else if (isVendorArea) {
+    authBtnHref = './dashboard.html';
+    authBtnText = 'Mon Espace';
+    hideRegister = true;
+  }
+
+  const registerBtn = hideRegister ? '' : 
+    `<a href="${basePath}register-client.html" class="btn btn--primary btn--sm navbar__hide-mobile">Créer un compte</a>`;
 
   const svgLogo = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40" height="36" style="display: block;">
@@ -72,7 +82,7 @@ export function renderNavbar(activePage = 'home') {
           </svg>
           <span class="cart-count" id="cartCount">0</span>
         </a>
-        <a href="${authBtnHref}" class="btn btn--ghost btn--sm navbar__hide-mobile">${authBtnText}</a>
+        <a href="${isSubfolder ? './dashboard.html' : './login.html'}" class="btn btn--ghost btn--sm navbar__hide-mobile">${authBtnText}</a>
         ${registerBtn}
         <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
           <span></span><span></span><span></span>
@@ -83,13 +93,12 @@ export function renderNavbar(activePage = 'home') {
       <nav class="mobile-drawer__links">
         ${mobileLinks}
         <hr />
-        <a href="${authBtnHref}" class="btn btn--ghost btn--full">${authBtnText}</a>
-        ${isClientArea ? '' : '<a href="./register-client.html" class="btn btn--primary btn--full">Créer un compte</a>'}
+        <a href="${isSubfolder ? './dashboard.html' : './login.html'}" class="btn btn--ghost btn--full">${authBtnText}</a>
+        ${hideRegister ? '' : '<a href="./register-client.html" class="btn btn--primary btn--full">Créer un compte</a>'}
       </nav>
     </div>
   `;
 
-  // Comportements
   const hamburger = document.getElementById('hamburger');
   const drawer = document.getElementById('mobileDrawer');
   hamburger?.addEventListener('click', () => {
