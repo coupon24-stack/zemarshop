@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mon Panier — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./css/main.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/home.css" />
+  <link rel="stylesheet" href="./css/pages/cart.css" />
+</head>
+<body>
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="cart-page container section">
+    <h1 class="cart-page__title">Mon Panier</h1>
+
+    <!-- Si le panier est vide -->
+    <div id="emptyCart" class="cart-empty hidden">
+      <div class="cart-empty__icon">🛒</div>
+      <h2>Votre panier est vide</h2>
+      <p>Découvrez nos produits et faites-vous plaisir !</p>
+      <a href="./shop.html" class="btn btn--primary btn--lg">Découvrir la boutique</a>
+    </div>
+
+    <!-- Si le panier contient des articles -->
+    <div id="cartContent" class="cart-content hidden">
+      
+      <div class="cart-items" id="cartItemsList">
+        <!-- Les articles seront injectés ici -->
+      </div>
+
+      <div class="cart-summary">
+        <h2 class="cart-summary__title">Résumé</h2>
+        
+        <div class="cart-summary__row">
+          <span>Sous-total</span>
+          <span id="subtotalPrice">0 FCFA</span>
+        </div>
+        <div class="cart-summary__row">
+          <span>Frais de livraison</span>
+          <span id="deliveryPrice">1 500 FCFA</span>
+        </div>
+        <div class="cart-summary__row cart-summary__row--total">
+          <span>Total</span>
+          <span id="totalPrice">0 FCFA</span>
+        </div>
+
+        <a href="./checkout.html" class="btn btn--primary btn--lg btn--full" style="margin-top: 16px;">
+          Passer la commande
+        </a>
+        <a href="./shop.html" class="cart-summary__continue">
+          ← Continuer mes achats
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <!-- TOUT LE CODE EST ICI POUR ÉVITER LES BUGS DE FICHIERS -->
+  <script type="module">
+    import { renderNavbar } from './js/ui/navbar.js';
+    import { renderFooter } from './js/ui/footer.js';
+
+    renderNavbar('shop');
+    renderFooter();
+
+    const DELIVERY_FEE = 1500;
+
+    // Base de données temporaire
+    const productsDB = {
+      'p1': { id: 'p1', name: 'Robe africaine wax élégante', price: 15000, shop: 'Boutique Awa', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600' },
+      'p2': { id: 'p2', name: 'Sneakers blanches homme', price: 22500, shop: 'Kicks CI', image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600' },
+      'p3': { id: 'p3', name: 'Sac à main cuir premium', price: 18000, shop: 'Élégance Shop', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600' },
+      'p4': { id: 'p4', name: 'Casque Bluetooth sans fil', price: 12500, shop: 'TechZone', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600' },
+      'p5': { id: 'p5', name: 'Montre connectée sport', price: 32000, shop: 'Gadget CI', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600' },
+      'p6': { id: 'p6', name: 'Parfum femme délicat', price: 9500, shop: 'Beauty Store', image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600' },
+      'p7': { id: 'p7', name: 'Smartphone Android 128Go', price: 85000, shop: 'Phone City', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600' },
+      'p8': { id: 'p8', name: 'Lampe déco design moderne', price: 7500, shop: 'Maison & Co', image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600' }
+    };
+
+    // 1. Récupération du panier
+    let cart = [];
+    try {
+      const saved = localStorage.getItem('zemar_cart');
+      if (saved) cart = JSON.parse(saved);
+    } catch(e) { console.log(e); }
+
+    // Si le panier est vide au chargement
+    if (cart.length === 0) {
+      document.getElementById('emptyCart').classList.remove('hidden');
+      document.getElementById('cartContent').classList.add('hidden');
+    } else {
+      document.getElementById('emptyCart').classList.add('hidden');
+      document.getElementById('cartContent').classList.remove('hidden');
+      renderCartItems();
+    }
+
+    // 2. Affichage des articles
+    function renderCartItems() {
+      const listEl = document.getElementById('cartItemsList');
+      listEl.innerHTML = cart.map(item => {
+        const p = productsDB[item.id];
+        if(!p) return '';
+        return `
+          <div class="cart-item">
+            <img class="cart-item__image" src="${p.image}" alt="${p.name}" />
+            <div class="cart-item__info">
+              <div>
+                <div class="cart-item__shop">${p.shop}</div>
+                <h3 class="cart-item__name">${p.name}</h3>
+                <div class="cart-item__price">${p.price.toLocaleString('fr-FR')} FCFA</div>
+              </div>
+              <div class="cart-item__actions">
+                <div class="quantity-control">
+                  <button onclick="window.changeQty('${item.id}', -1)">−</button>
+                  <span>${item.quantity}</span>
+                  <button onclick="window.changeQty('${item.id}', 1)">+</button>
+                </div>
+                <button class="cart-item__remove" onclick="window.removeItem('${item.id}')">🗑️ Supprimer</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      updateTotals();
+    }
+
+    // 3. Calcul des totaux
+    function updateTotals() {
+      let subtotal = 0;
+      cart.forEach(item => {
+        const p = productsDB[item.id];
+        if(p) subtotal += p.price * item.quantity;
+      });
+      const total = subtotal + DELIVERY_FEE;
+
+      document.getElementById('subtotalPrice').textContent = subtotal.toLocaleString('fr-FR') + ' FCFA';
+      document.getElementById('deliveryPrice').textContent = DELIVERY_FEE.toLocaleString('fr-FR') + ' FCFA';
+      document.getElementById('totalPrice').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+    }
+
+    // 4. Fonctions globales pour les boutons
+    window.changeQty = function(id, delta) {
+      const item = cart.find(i => i.id === id);
+      if(!item) return;
+      item.quantity += delta;
+      if(item.quantity <= 0) cart = cart.filter(i => i.id !== id);
+      
+      localStorage.setItem('zemar_cart', JSON.stringify(cart));
+      
+      // Met à jour le badge de la navbar
+      const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const badge = document.getElementById('cartCount');
+      if(badge) { badge.textContent = totalItems; badge.classList.toggle('is-visible', totalItems > 0); }
+
+      if (cart.length === 0) {
+        document.getElementById('emptyCart').classList.remove('hidden');
+        document.getElementById('cartContent').classList.add('hidden');
+      } else {
+        renderCartItems();
+      }
+    };
+
+    window.removeItem = function(id) {
+      cart = cart.filter(i => i.id !== id);
+      localStorage.setItem('zemar_cart', JSON.stringify(cart));
+      
+      const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const badge = document.getElementById('cartCount');
+      if(badge) { badge.textContent = totalItems; badge.classList.toggle('is-visible', totalItems > 0); }
+
+      if (cart.length === 0) {
+        document.getElementById('emptyCart').classList.remove('hidden');
+        document.getElementById('cartContent').classList.add('hidden');
+      } else {
+        renderCartItems();
+      }
+    };
+  </script>
+</body>
+</html>
