@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Créer un compte — ZemarShop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/home.css" />
+  <link rel="stylesheet" href="./css/pages/auth.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+  <header class="navbar" id="navbar"></header>
+  <main class="auth-page container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>Créer un compte</h1>
+        <p>Rejoignez ZemarShop en quelques secondes.</p>
+      </div>
+      <form id="registerForm" onsubmit="event.preventDefault();">
+        <div class="field"><label class="field__label">Nom complet</label><input type="text" class="field__input" placeholder="Ex: Koffi Yao" required /></div>
+        <div class="field"><label class="field__label">Adresse e-mail</label><input type="email" class="field__input" placeholder="votre@email.com" required /></div>
+        <div class="field"><label class="field__label">Numéro de téléphone</label><input type="tel" class="field__input" placeholder="Ex: 0700000000" required /></div>
+        <div class="field"><label class="field__label">Mot de passe</label><input type="password" class="field__input" placeholder="••••••••" required /></div>
+        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit">Créer mon compte</button>
+      </form>
+      <div class="auth-footer"><p>Vous avez déjà un compte ? <a href="./login.html">Se connecter</a></p></div>
+    </div>
+  </main>
+  <footer class="footer" id="footer"></footer>
+  <script type="module">
+    import { renderNavbar } from './js/ui/navbar.js';
+    import { renderFooter } from './js/ui/footer.js';
+    renderNavbar('register'); renderFooter();
+    document.getElementById('registerForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmit');
+      btn.textContent = 'Création en cours...'; btn.disabled = true;
+      setTimeout(() => { window.location.href = './index.html'; }, 1000);
+    });
+  </script>
+</body>
+</html>
