@@ -21,7 +21,8 @@
   <main class="cart-page container section">
     <h1 class="cart-page__title">Validation de commande</h1>
 
-    <div class="cart-content" style="grid-template-columns: 1fr 1fr;">
+    <!-- On utilise cart-content qui gère déjà le responsive (1 col mobile, 2 col desktop) -->
+    <div class="cart-content">
       
       <!-- Formulaire de livraison -->
       <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm);">
@@ -60,7 +61,6 @@
               <input type="radio" name="payment" value="cash_on_delivery" checked />
               <span>💵 Paiement à la livraison</span>
             </label>
-            <!-- On ajoutera les autres modes plus tard -->
           </div>
         </form>
       </div>
@@ -128,7 +128,6 @@
       if (saved) cart = JSON.parse(saved);
     } catch(e) {}
 
-    // Si le panier est vide, on redirige vers le panier
     if (cart.length === 0) {
       window.location.href = './cart.html';
     }
@@ -162,17 +161,14 @@
       btn.textContent = 'Traitement en cours...';
       btn.disabled = true;
 
-      // Simulation de la création de commande
       setTimeout(() => {
-        // On vide le panier
         localStorage.removeItem('zemar_cart');
         localStorage.removeItem('zemar_cart_count');
         
-        // On redirige vers une page de succès (ou l'accueil)
         alert("Commande confirmée ! Un administrateur vous contactera bientôt pour la livraison.");
         window.location.href = './index.html';
       }, 1500);
     });
   </script>
 </body>
-              </html>
+  </html>
