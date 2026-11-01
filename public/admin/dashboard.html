@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administration — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/pages/home.css" />
+  <link rel="stylesheet" href="../css/pages/vendor.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="container section">
+    
+    <!-- En-tête Admin -->
+    <div class="vendor-header" style="border-left: 4px solid var(--color-text);">
+      <div class="vendor-info">
+        <span class="badge" style="background: var(--color-text); color: white;">Administrateur</span>
+        <h1>Tableau de bord Général</h1>
+        <p>Bienvenue sur l'espace de gestion de ZemarShop.</p>
+      </div>
+    </div>
+
+    <!-- Statistiques Globales -->
+    <div class="vendor-stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 32px;">
+      <div class="stat-card" style="border-left-color: var(--color-text);">
+        <span class="stat-label">Ventes Totales</span>
+        <strong class="stat-value">450 000 FCFA</strong>
+      </div>
+      <div class="stat-card" style="border-left-color: var(--color-success);">
+        <span class="stat-label">Commissions (10%)</span>
+        <strong class="stat-value" style="color: var(--color-success);">45 000 FCFA</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Commandes en cours</span>
+        <strong class="stat-value">8</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Produits à valider</span>
+        <strong class="stat-value" style="color: var(--color-warning);">3</strong>
+      </div>
+    </div>
+
+    <!-- Menu et Actions Rapides -->
+    <div class="vendor-layout">
+      
+      <!-- Menu de gauche -->
+      <aside class="vendor-sidebar">
+        <a href="#" class="vendor-nav-link active">Vue d'ensemble</a>
+        <a href="#" class="vendor-nav-link">Gestion des commandes</a>
+        <a href="#" class="vendor-nav-link">Validation des produits</a>
+        <a href="#" class="vendor-nav-link">Gestion des vendeurs</a>
+        <a href="#" class="vendor-nav-link">Finances & Reversements</a>
+        <a href="#" class="vendor-nav-link">Paramètres</a>
+      </aside>
+
+      <!-- Contenu principal -->
+      <div class="vendor-content">
+        
+        <!-- Section Validation Vendeurs -->
+        <div class="client-section" style="margin-bottom: 32px;">
+          <h2 class="section-title">Nouveaux vendeurs (à valider)</h2>
+          
+          <div class="vendor-product-item">
+            <div class="client-avatar" style="width: 48px; height: 48px; font-size: 16px;">B</div>
+            <div class="vendor-product-info">
+              <h3>Boutique Élégance</h3>
+              <p>Koffi Marc — Cocody, Abidjan</p>
+            </div>
+            <div class="vendor-product-actions" style="flex-direction: row;">
+              <button class="btn btn--success btn--sm">Approuver</button>
+              <button class="btn btn--danger btn--sm">Refuser</button>
+            </div>
+          </div>
+
+          <div class="vendor-product-item">
+            <div class="client-avatar" style="width: 48px; height: 48px; font-size: 16px;">T</div>
+            <div class="vendor-product-info">
+              <h3>TechZone</h3>
+              <p>Yao Serge — Yopougon, Abidjan</p>
+            </div>
+            <div class="vendor-product-actions" style="flex-direction: row;">
+              <button class="btn btn--success btn--sm">Approuver</button>
+              <button class="btn btn--danger btn--sm">Refuser</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section Nouvelles Commandes -->
+        <div class="client-section">
+          <h2 class="section-title">Dernières commandes</h2>
+          
+          <div class="vendor-product-item">
+            <div class="vendor-product-info">
+              <h3>Commande #ZM-2025-084</h3>
+              <p>Client : Koffi Yao — Total : 16 500 FCFA</p>
+            </div>
+            <div class="vendor-product-actions">
+              <span class="badge badge--warning">En attente</span>
+              <button class="btn btn--outline btn--sm">Gérer</button>
+            </div>
+          </div>
+
+          <div class="vendor-product-item">
+            <div class="vendor-product-info">
+              <h3>Commande #ZM-2025-083</h3>
+              <p>Client : Awa Diarra — Total : 25 000 FCFA</p>
+            </div>
+            <div class="vendor-product-actions">
+              <span class="badge badge--success">Confirmée</span>
+              <button class="btn btn--outline btn--sm">Gérer</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from '../js/ui/navbar.js';
+    import { renderFooter } from '../js/ui/footer.js';
+
+    // On réutilise 'vendor' pour la navbar car on est dans un sous-dossier
+    renderNavbar('vendor');
+    renderFooter();
+  </script>
+</body>
+                </html>
