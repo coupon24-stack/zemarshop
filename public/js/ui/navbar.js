@@ -13,52 +13,57 @@ export function renderNavbar(activePage = 'home') {
     { href: './contact.html', label: 'Contact', key: 'contact' },
   ];
 
-  const desktopLinks = links
+  // Si on est sur une page de l'espace client, on adapte les liens
+  const isClientArea = activePage === 'client';
+  const basePath = isClientArea ? '../' : './';
+  
+  // On ajuste les liens pour qu'ils fonctionnent depuis le dossier /client/
+  const adjustedLinks = links.map(l => ({
+    ...l,
+    href: isClientArea ? l.href.replace('./', '../') : l.href
+  }));
+
+  const desktopLinks = adjustedLinks
     .map(l => `<a href="${l.href}" class="${l.key === activePage ? 'active' : ''}">${l.label}</a>`)
     .join('');
 
-  const mobileLinks = links
+  const mobileLinks = adjustedLinks
     .map(l => `<a href="${l.href}">${l.label}</a>`)
     .join('');
 
-  // NOUVEAU LOGO INSPIRÉ DE GREEN BASKET (Version Rouge/Noir)
+  // GESTION DU BOUTON CONNEXION / MON COMPTE
+  const authBtnHref = isClientArea ? './dashboard.html' : './login.html';
+  const authBtnText = isClientArea ? 'Mon Compte' : 'Connexion';
+  
+  // Le bouton "Créer un compte" disparaît si on est déjà dans l'espace client
+  const registerBtn = isClientArea ? '' : 
+    `<a href="./register-client.html" class="btn btn--primary btn--sm navbar__hide-mobile">Créer un compte</a>`;
+
   const svgLogo = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40" height="36" style="display: block;">
-      <!-- Le Chariot (Rouge) -->
       <g fill="none" stroke="#E60023" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-        <!-- Lignes de vitesse à gauche -->
         <path d="M2 14 H12" stroke-width="2" />
         <path d="M6 20 H14" stroke-width="2" />
         <path d="M2 26 H12" stroke-width="2" />
-        
-        <!-- Le panier -->
         <path d="M16 10 H22 L28 28 H44 L48 16 H20" />
       </g>
-      <!-- Roues du chariot -->
       <circle cx="30" cy="32" r="3.5" fill="#E60023" />
       <circle cx="42" cy="32" r="3.5" fill="#E60023" />
-      
-      <!-- Symbole au-dessus du panier (remplace la feuille par une étoile/étincelle rouge) -->
       <path d="M34 4 L36 9 L41 11 L36 13 L34 18 L32 13 L27 11 L32 9 Z" fill="#E60023" />
-
-      <!-- Ligne séparatrice (Gris foncé) -->
       <line x1="60" y1="10" x2="60" y2="30" stroke="#222222" stroke-width="1.5" />
-
-      <!-- Texte ZEMAR -->
       <text x="70" y="27" font-family="Inter, sans-serif" font-weight="800" font-size="24" fill="#222222" letter-spacing="1">ZEMAR</text>
-      <!-- Point final -->
       <circle cx="175" cy="25" r="3" fill="#E60023" />
     </svg>
   `;
 
   nav.innerHTML = `
     <div class="navbar__inner">
-      <a href="./index.html" class="navbar__logo" aria-label="ZemarShop Accueil">
+      <a href="${basePath}index.html" class="navbar__logo" aria-label="ZemarShop Accueil">
         ${svgLogo}
       </a>
       <nav class="navbar__links" aria-label="Navigation principale">${desktopLinks}</nav>
       <div class="navbar__actions">
-        <a href="./cart.html" class="icon-btn cart-btn" aria-label="Panier">
+        <a href="${basePath}cart.html" class="icon-btn cart-btn" aria-label="Panier">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 6h15l-1.5 9h-12z"/>
             <circle cx="9" cy="20" r="1.5"/>
@@ -67,8 +72,8 @@ export function renderNavbar(activePage = 'home') {
           </svg>
           <span class="cart-count" id="cartCount">0</span>
         </a>
-        <a href="./auth/login.html" class="btn btn--ghost btn--sm navbar__hide-mobile">Connexion</a>
-        <a href="./auth/register-client.html" class="btn btn--primary btn--sm navbar__hide-mobile">Créer un compte</a>
+        <a href="${authBtnHref}" class="btn btn--ghost btn--sm navbar__hide-mobile">${authBtnText}</a>
+        ${registerBtn}
         <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -78,8 +83,8 @@ export function renderNavbar(activePage = 'home') {
       <nav class="mobile-drawer__links">
         ${mobileLinks}
         <hr />
-        <a href="./auth/login.html" class="btn btn--ghost btn--full">Connexion</a>
-        <a href="./auth/register-client.html" class="btn btn--primary btn--full">Créer un compte</a>
+        <a href="${authBtnHref}" class="btn btn--ghost btn--full">${authBtnText}</a>
+        ${isClientArea ? '' : '<a href="./register-client.html" class="btn btn--primary btn--full">Créer un compte</a>'}
       </nav>
     </div>
   `;
