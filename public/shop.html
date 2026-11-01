@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boutique — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./css/main.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/home.css" />
+  <link rel="stylesheet" href="./css/pages/shop.css" />
+</head>
+<body>
+
+  <header class="navbar" id="navbar"></header>
+
+  <section class="shop-header">
+    <div class="container">
+      <h1>Tous les produits</h1>
+      <p>Découvrez notre sélection de produits.</p>
+    </div>
+  </section>
+
+  <section class="shop-toolbar">
+    <div class="container">
+      <form class="search-form" onsubmit="event.preventDefault();">
+        <div class="search-form__field">
+          <svg class="search-form__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
+          <input type="search" placeholder="Rechercher..." />
+        </div>
+        <button type="submit" class="btn btn--primary">Rechercher</button>
+      </form>
+
+      <div class="sort-wrapper">
+        <label>Trier par :</label>
+        <select class="field__select">
+          <option>Nouveautés</option>
+          <option>Populaires</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="shop-products section">
+    <div class="container">
+      <div class="products-grid" id="shopGrid">
+        
+        <article class="product-card">
+          <div class="product-card__image-wrap">
+            <img class="product-card__image" src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600" alt="Robe" />
+          </div>
+          <div class="product-card__body">
+            <div class="product-card__shop">Boutique Awa</div>
+            <h3 class="product-card__name">Robe africaine wax élégante</h3>
+            <div class="product-card__prices">
+              <span class="product-card__price">15 000 FCFA</span>
+            </div>
+            <div class="product-card__actions">
+              <a href="./product.html?id=p1" class="btn btn--primary">Voir le produit</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="product-card">
+          <div class="product-card__image-wrap">
+            <img class="product-card__image" src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600" alt="Sneakers" />
+          </div>
+          <div class="product-card__body">
+            <div class="product-card__shop">Kicks CI</div>
+            <h3 class="product-card__name">Sneakers blanches homme</h3>
+            <div class="product-card__prices">
+              <span class="product-card__price">22 500 FCFA</span>
+            </div>
+            <div class="product-card__actions">
+              <a href="./product.html?id=p2" class="btn btn--primary">Voir le produit</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="product-card">
+          <div class="product-card__image-wrap">
+            <img class="product-card__image" src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600" alt="Sac" />
+          </div>
+          <div class="product-card__body">
+            <div class="product-card__shop">Élégance Shop</div>
+            <h3 class="product-card__name">Sac à main cuir premium</h3>
+            <div class="product-card__prices">
+              <span class="product-card__price">18 000 FCFA</span>
+            </div>
+            <div class="product-card__actions">
+              <a href="./product.html?id=p3" class="btn btn--primary">Voir le produit</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="product-card">
+          <div class="product-card__image-wrap">
+            <img class="product-card__image" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600" alt="Casque" />
+          </div>
+          <div class="product-card__body">
+            <div class="product-card__shop">TechZone</div>
+            <h3 class="product-card__name">Casque Bluetooth sans fil</h3>
+            <div class="product-card__prices">
+              <span class="product-card__price">12 500 FCFA</span>
+            </div>
+            <div class="product-card__actions">
+              <a href="./product.html?id=p4" class="btn btn--primary">Voir le produit</a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from './js/ui/navbar.js';
+    import { renderFooter } from './js/ui/footer.js';
+    
+    renderNavbar('shop');
+    renderFooter();
+  </script>
+
+  <!-- GESTION INSTANTANÉE DU SCROLL -->
+  <script>
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual'; 
+    }
+    
+    window.addEventListener('beforeunload', () => {
+      sessionStorage.setItem('shopScrollPos', window.scrollY);
+    });
+    
+    const shopScroll = sessionStorage.getItem('shopScrollPos');
+    if (shopScroll) {
+      window.scrollTo({ top: parseInt(shopScroll, 10), behavior: 'instant' });
+    }
+  </script>
+</body>
+</html>
