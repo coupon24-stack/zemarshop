@@ -77,7 +77,8 @@
 
       <div class="product-actions">
         <button class="btn btn--outline btn--lg" id="btnAddToCart">Ajouter au panier</button>
-        <button class="btn btn--primary btn--lg">Commander maintenant</button>
+        <!-- AJOUT D'UN ID POUR LE BOUTON COMMANDER -->
+        <button class="btn btn--primary btn--lg" id="btnBuyNow">Commander maintenant</button>
       </div>
     </div>
   </main>
@@ -107,6 +108,7 @@
     const productId = params.get('id');
     const product = productsDB[productId] || productsDB['p1'];
 
+    // Remplissage des données
     document.getElementById('productImage').src = product.image;
     document.getElementById('thumb1').src = product.image;
     document.getElementById('thumb2').src = product.image;
@@ -126,14 +128,10 @@
       document.getElementById('productDiscount').style.display = 'none';
     }
 
-    // GESTION DU PANIER (SANS ALERTE)
-    document.getElementById('btnAddToCart').addEventListener('click', function(e) {
-      const btn = e.currentTarget;
-      
-      // 1. On récupère le panier actuel
+    // --- FONCTION D'AJOUT AU PANIER ---
+    function addToCart() {
       let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
       
-      // 2. On cherche si le produit y est déjà
       const existingItem = cart.find(item => item.id === product.id);
       
       if (existingItem) {
@@ -142,10 +140,8 @@
         cart.push({ id: product.id, quantity: 1 });
       }
       
-      // 3. On sauvegarde
       localStorage.setItem('zemar_cart', JSON.stringify(cart));
       
-      // 4. On met à jour le badge dans la navbar
       const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
       localStorage.setItem('zemar_cart_count', totalItems);
       const badge = document.getElementById('cartCount');
@@ -153,8 +149,14 @@
         badge.textContent = totalItems;
         badge.classList.add('is-visible');
       }
+    }
+
+    // --- BOUTON AJOUTER AU PANIER (Reste sur la page) ---
+    document.getElementById('btnAddToCart').addEventListener('click', function(e) {
+      const btn = e.currentTarget;
+      addToCart();
       
-      // 5. Feedback visuel (le bouton change de texte et de couleur 2 secondes)
+      // Feedback visuel
       const originalText = btn.innerHTML;
       btn.innerHTML = '✓ Ajouté !';
       btn.style.backgroundColor = '#16A34A'; // Vert
@@ -169,7 +171,13 @@
       }, 2000);
     });
 
-    // Afficher la page
+    // --- BOUTON COMMANDER MAINTENANT (Redirige vers le panier) ---
+    document.getElementById('btnBuyNow').addEventListener('click', function() {
+      addToCart(); // On ajoute d'abord au panier
+      window.location.href = './cart.html'; // Puis on redirige vers le panier
+    });
+
+    // Afficher la page en douceur
     const content = document.getElementById('productContent');
     content.style.visibility = 'visible';
     content.style.opacity = '1';
