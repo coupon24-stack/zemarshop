@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connexion — ZemarShop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/home.css" />
+  <link rel="stylesheet" href="./css/pages/auth.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+  <header class="navbar" id="navbar"></header>
+  <main class="auth-page container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>Connexion</h1>
+        <p>Content de vous revoir sur ZemarShop !</p>
+      </div>
+      <form id="loginForm" onsubmit="event.preventDefault();">
+        <div class="field">
+          <label class="field__label">Adresse e-mail</label>
+          <input type="email" class="field__input" placeholder="votre@email.com" required />
+        </div>
+        <div class="field">
+          <label class="field__label">Mot de passe</label>
+          <input type="password" class="field__input" placeholder="••••••••" required />
+        </div>
+        <div class="auth-actions">
+          <label class="auth-checkbox"><input type="checkbox" /> Se souvenir de moi</label>
+          <a href="#" class="auth-link">Mot de passe oublié ?</a>
+        </div>
+        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit">Se connecter</button>
+      </form>
+      <div class="auth-footer">
+        <p>Vous n'avez pas de compte ? <a href="./register-client.html">Créer un compte</a></p>
+        <p style="margin-top: 8px; font-size: 12px;">Vous êtes un vendeur ? <a href="./register-vendor.html">Espace vendeur</a></p>
+      </div>
+    </div>
+  </main>
+  <footer class="footer" id="footer"></footer>
+  <script type="module">
+    import { renderNavbar } from './js/ui/navbar.js';
+    import { renderFooter } from './js/ui/footer.js';
+    renderNavbar('login'); renderFooter();
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmit');
+      btn.textContent = 'Connexion en cours...'; btn.disabled = true;
+      setTimeout(() => { window.location.href = './index.html'; }, 1000);
+    });
+  </script>
+</body>
+  </html>
