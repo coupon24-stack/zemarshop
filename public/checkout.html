@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Validation de commande — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./css/main.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/home.css" />
+  <link rel="stylesheet" href="./css/pages/cart.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="cart-page container section">
+    <h1 class="cart-page__title">Validation de commande</h1>
+
+    <div class="cart-content" style="grid-template-columns: 1fr 1fr;">
+      
+      <!-- Formulaire de livraison -->
+      <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm);">
+        <h2 style="margin-bottom: 16px; font-size: 18px;">Informations de livraison</h2>
+        
+        <form id="checkoutForm" onsubmit="event.preventDefault();">
+          <div class="field">
+            <label class="field__label">Nom complet</label>
+            <input type="text" class="field__input" placeholder="Ex: Koffi Yao" required />
+          </div>
+          
+          <div class="field" style="margin-top: 12px;">
+            <label class="field__label">Numéro de téléphone</label>
+            <input type="tel" class="field__input" placeholder="Ex: 0700000000" required />
+          </div>
+
+          <div class="field" style="margin-top: 12px;">
+            <label class="field__label">Ville</label>
+            <input type="text" class="field__input" placeholder="Ex: Abidjan" required />
+          </div>
+
+          <div class="field" style="margin-top: 12px;">
+            <label class="field__label">Commune</label>
+            <input type="text" class="field__input" placeholder="Ex: Cocody" required />
+          </div>
+
+          <div class="field" style="margin-top: 12px;">
+            <label class="field__label">Adresse de livraison</label>
+            <input type="text" class="field__input" placeholder="Ex: Rue des Jardins" required />
+          </div>
+
+          <h2 style="margin-top: 24px; margin-bottom: 16px; font-size: 18px;">Mode de paiement</h2>
+
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--color-primary); border-radius: 8px; background: var(--color-primary-light); cursor: pointer;">
+              <input type="radio" name="payment" value="cash_on_delivery" checked />
+              <span>💵 Paiement à la livraison</span>
+            </label>
+            <!-- On ajoutera les autres modes plus tard -->
+          </div>
+        </form>
+      </div>
+
+      <!-- Récapitulatif -->
+      <div>
+        <div class="cart-summary" style="position: static;">
+          <h2 class="cart-summary__title">Récapitulatif</h2>
+          
+          <div id="checkoutItems" style="margin-bottom: 16px; font-size: 14px; color: var(--color-text-soft);">
+            <!-- Les produits seront injectés ici -->
+          </div>
+
+          <div class="cart-summary__row" style="border-top: 1px solid var(--color-border); padding-top: 12px;">
+            <span>Sous-total</span>
+            <span id="checkoutSubtotal">0 FCFA</span>
+          </div>
+          <div class="cart-summary__row">
+            <span>Frais de livraison</span>
+            <span id="checkoutDelivery">1 500 FCFA</span>
+          </div>
+          <div class="cart-summary__row cart-summary__row--total">
+            <span>Total</span>
+            <span id="checkoutTotal">0 FCFA</span>
+          </div>
+
+          <button type="submit" form="checkoutForm" class="btn btn--primary btn--lg btn--full" style="margin-top: 16px;" id="btnConfirmOrder">
+            Confirmer la commande
+          </button>
+          
+          <p style="text-align: center; font-size: 12px; color: var(--color-text-muted); margin-top: 12px;">
+            En confirmant, vous acceptez nos conditions générales.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from './js/ui/navbar.js';
+    import { renderFooter } from './js/ui/footer.js';
+
+    renderNavbar('checkout');
+    renderFooter();
+
+    const DELIVERY_FEE = 1500;
+    const productsDB = {
+      'p1': { id: 'p1', name: 'Robe africaine wax élégante', price: 15000, image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600' },
+      'p2': { id: 'p2', name: 'Sneakers blanches homme', price: 22500, image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600' },
+      'p3': { id: 'p3', name: 'Sac à main cuir premium', price: 18000, image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600' },
+      'p4': { id: 'p4', name: 'Casque Bluetooth sans fil', price: 12500, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600' },
+      'p5': { id: 'p5', name: 'Montre connectée sport', price: 32000, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600' },
+      'p6': { id: 'p6', name: 'Parfum femme délicat', price: 9500, image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600' },
+      'p7': { id: 'p7', name: 'Smartphone Android 128Go', price: 85000, image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600' },
+      'p8': { id: 'p8', name: 'Lampe déco design moderne', price: 7500, image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600' }
+    };
+
+    // 1. Charger le panier
+    let cart = [];
+    try {
+      const saved = localStorage.getItem('zemar_cart');
+      if (saved) cart = JSON.parse(saved);
+    } catch(e) {}
+
+    // Si le panier est vide, on redirige vers le panier
+    if (cart.length === 0) {
+      window.location.href = './cart.html';
+    }
+
+    // 2. Afficher les articles dans le récapitulatif
+    const itemsEl = document.getElementById('checkoutItems');
+    let subtotal = 0;
+
+    itemsEl.innerHTML = cart.map(item => {
+      const p = productsDB[item.id];
+      if (!p) return '';
+      subtotal += p.price * item.quantity;
+      return `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span>${item.quantity} x ${p.name}</span>
+          <span>${(p.price * item.quantity).toLocaleString('fr-FR')} FCFA</span>
+        </div>
+      `;
+    }).join('');
+
+    const total = subtotal + DELIVERY_FEE;
+    document.getElementById('checkoutSubtotal').textContent = subtotal.toLocaleString('fr-FR') + ' FCFA';
+    document.getElementById('checkoutDelivery').textContent = DELIVERY_FEE.toLocaleString('fr-FR') + ' FCFA';
+    document.getElementById('checkoutTotal').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+
+    // 3. Confirmer la commande
+    document.getElementById('checkoutForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const btn = document.getElementById('btnConfirmOrder');
+      btn.textContent = 'Traitement en cours...';
+      btn.disabled = true;
+
+      // Simulation de la création de commande
+      setTimeout(() => {
+        // On vide le panier
+        localStorage.removeItem('zemar_cart');
+        localStorage.removeItem('zemar_cart_count');
+        
+        // On redirige vers une page de succès (ou l'accueil)
+        alert("Commande confirmée ! Un administrateur vous contactera bientôt pour la livraison.");
+        window.location.href = './index.html';
+      }, 1500);
+    });
+  </script>
+</body>
+              </html>
