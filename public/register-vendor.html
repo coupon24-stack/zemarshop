@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Devenir vendeur — ZemarShop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/home.css" />
+  <link rel="stylesheet" href="./css/pages/auth.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+  <header class="navbar" id="navbar"></header>
+  <main class="auth-page container">
+    <div class="auth-card" style="max-width: 600px;">
+      <div class="auth-header">
+        <h1>Devenir vendeur</h1>
+        <p>Développez votre activité avec ZemarShop.</p>
+      </div>
+      <form id="registerVendorForm" onsubmit="event.preventDefault();">
+        <h3 style="margin-bottom: 8px; font-size: 14px; color: var(--color-text-soft); text-transform: uppercase;">Informations personnelles</h3>
+        <div class="field"><label class="field__label">Nom du responsable</label><input type="text" class="field__input" placeholder="Ex: Koffi Yao" required /></div>
+        <div class="field"><label class="field__label">Adresse e-mail</label><input type="email" class="field__input" placeholder="votre@email.com" required /></div>
+        <div class="field"><label class="field__label">Numéro de téléphone</label><input type="tel" class="field__input" placeholder="Ex: 0700000000" required /></div>
+        <h3 style="margin-top: 16px; margin-bottom: 8px; font-size: 14px; color: var(--color-text-soft); text-transform: uppercase;">Informations de la boutique</h3>
+        <div class="field"><label class="field__label">Nom de la boutique</label><input type="text" class="field__input" placeholder="Ex: Boutique Awa" required /></div>
+        <div class="field"><label class="field__label">Ville</label><input type="text" class="field__input" placeholder="Ex: Abidjan" required /></div>
+        <div class="field"><label class="field__label">Commune</label><input type="text" class="field__input" placeholder="Ex: Cocody" required /></div>
+        <div class="field" style="flex-direction: row; align-items: flex-start; gap: 8px;"><input type="checkbox" required style="margin-top: 4px;" /><label style="font-size: 13px; color: var(--color-text-soft);">J'accepte les conditions générales vendeurs de ZemarShop.</label></div>
+        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit" style="margin-top: 16px;">Soumettre ma demande</button>
+      </form>
+      <div class="auth-footer"><p>Vous avez déjà un compte ? <a href="./login.html">Se connecter</a></p></div>
+    </div>
+  </main>
+  <footer class="footer" id="footer"></footer>
+  <script type="module">
+    import { renderNavbar } from './js/ui/navbar.js';
+    import { renderFooter } from './js/ui/footer.js';
+    renderNavbar('register'); renderFooter();
+    document.getElementById('registerVendorForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmit');
+      btn.textContent = 'Envoi en cours...'; btn.disabled = true;
+      setTimeout(() => { alert("Votre demande a bien été envoyée ! L'administrateur va la valider."); window.location.href = './index.html'; }, 1000);
+    });
+  </script>
+</body>
+    </html>
