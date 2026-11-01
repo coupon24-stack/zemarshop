@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Espace Vendeur — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/pages/home.css" />
+  <link rel="stylesheet" href="../css/pages/vendor.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="container section">
+    
+    <!-- En-tête de la boutique -->
+    <div class="vendor-header">
+      <div class="vendor-info">
+        <span class="badge badge--success">Boutique vérifiée</span>
+        <h1>Boutique Awa</h1>
+        <p>Gérez vos produits et suivez vos ventes.</p>
+      </div>
+      <button class="btn btn--primary">➕ Ajouter un produit</button>
+    </div>
+
+    <!-- Statistiques financières -->
+    <div class="vendor-stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Chiffre d'affaires</span>
+        <strong class="stat-value">150 000 FCFA</strong>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Commission Zemar (10%)</span>
+        <strong class="stat-value" style="color: var(--color-danger);">- 15 000 FCFA</strong>
+      </div>
+      <div class="stat-card" style="background: var(--color-success-soft);">
+        <span class="stat-label" style="color: var(--color-success);">Net à recevoir</span>
+        <strong class="stat-value" style="color: var(--color-success);">135 000 FCFA</strong>
+      </div>
+    </div>
+
+    <!-- Menu et liste des produits -->
+    <div class="vendor-layout">
+      
+      <!-- Menu de gauche -->
+      <aside class="vendor-sidebar">
+        <a href="#" class="vendor-nav-link active">Tableau de bord</a>
+        <a href="#" class="vendor-nav-link">Mes produits</a>
+        <a href="#" class="vendor-nav-link">Mes ventes</a>
+        <a href="#" class="vendor-nav-link">Mes revenus</a>
+        <a href="#" class="vendor-nav-link">Ma boutique</a>
+      </aside>
+
+      <!-- Contenu principal -->
+      <div class="vendor-content">
+        <h2 class="section-title">Mes derniers produits</h2>
+        
+        <div class="vendor-products-list">
+          
+          <!-- Produit 1 -->
+          <div class="vendor-product-item">
+            <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=100" alt="Robe" />
+            <div class="vendor-product-info">
+              <h3>Robe africaine wax élégante</h3>
+              <p>Prix : 15 000 FCFA</p>
+              <p>Stock : 12 unités</p>
+            </div>
+            <div class="vendor-product-actions">
+              <span class="badge badge--success">En ligne</span>
+              <button class="btn btn--outline btn--sm">Modifier</button>
+            </div>
+          </div>
+
+          <!-- Produit 2 -->
+          <div class="vendor-product-item">
+            <img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=100" alt="Sneakers" />
+            <div class="vendor-product-info">
+              <h3>Sneakers blanches homme</h3>
+              <p>Prix : 22 500 FCFA</p>
+              <p>Stock : 8 unités</p>
+            </div>
+            <div class="vendor-product-actions">
+              <span class="badge badge--warning">En attente</span>
+              <button class="btn btn--outline btn--sm">Modifier</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from '../js/ui/navbar.js';
+    import { renderFooter } from '../js/ui/footer.js';
+
+    renderNavbar('vendor');
+    renderFooter();
+  </script>
+</body>
+        </html>
