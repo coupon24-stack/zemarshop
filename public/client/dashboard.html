@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mon Espace — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/pages/home.css" />
+  <link rel="stylesheet" href="../css/pages/client.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="container section">
+    <!-- En-tête du profil -->
+    <div class="client-header">
+      <div class="client-avatar">KY</div>
+      <div class="client-info">
+        <h1>Bonjour, Koffi Yao 👋</h1>
+        <p>Bienvenue dans votre espace personnel ZemarShop.</p>
+      </div>
+    </div>
+
+    <div class="client-layout">
+      <!-- Menu de gauche -->
+      <aside class="client-sidebar">
+        <a href="#" class="client-nav-link active">Tableau de bord</a>
+        <a href="#" class="client-nav-link">Mes commandes</a>
+        <a href="#" class="client-nav-link">Mes favoris</a>
+        <a href="#" class="client-nav-link">Mes adresses</a>
+        <a href="#" class="client-nav-link">Mon profil</a>
+        <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--color-border);">
+        <a href="../index.html" class="client-nav-link" style="color: var(--color-danger);">Déconnexion</a>
+      </aside>
+
+      <!-- Contenu principal -->
+      <div class="client-content">
+        
+        <!-- Statistiques rapides -->
+        <div class="client-stats">
+          <div class="stat-card">
+            <span class="stat-icon">📦</span>
+            <div>
+              <strong>2</strong>
+              <span>Commandes</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">❤️</span>
+            <div>
+              <strong>5</strong>
+              <span>Favoris</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dernières commandes -->
+        <div class="client-section">
+          <h2>Dernières commandes</h2>
+          
+          <!-- Commande de test 1 -->
+          <div class="order-card">
+            <div class="order-header">
+              <div>
+                <span class="order-number">Commande #ZM-2025-001</span>
+                <span class="order-date">12 Janvier 2025</span>
+              </div>
+              <span class="badge badge--success">Livrée</span>
+            </div>
+            <div class="order-body">
+              <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=100" alt="Robe" class="order-image" />
+              <div class="order-details">
+                <p><strong>Robe africaine wax élégante</strong></p>
+                <p>Quantité : 1 — 15 000 FCFA</p>
+              </div>
+            </div>
+            <div class="order-footer">
+              <span>Total : <strong>16 500 FCFA</strong></span>
+              <button class="btn btn--outline btn--sm">Détails</button>
+            </div>
+          </div>
+
+          <!-- Commande de test 2 -->
+          <div class="order-card">
+            <div class="order-header">
+              <div>
+                <span class="order-number">Commande #ZM-2025-002</span>
+                <span class="order-date">15 Janvier 2025</span>
+              </div>
+              <span class="badge badge--warning">En cours</span>
+            </div>
+            <div class="order-body">
+              <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100" alt="Casque" class="order-image" />
+              <div class="order-details">
+                <p><strong>Casque Bluetooth sans fil</strong></p>
+                <p>Quantité : 2 — 25 000 FCFA</p>
+              </div>
+            </div>
+            <div class="order-footer">
+              <span>Total : <strong>26 500 FCFA</strong></span>
+              <button class="btn btn--outline btn--sm">Détails</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from '../js/ui/navbar.js';
+    import { renderFooter } from '../js/ui/footer.js';
+
+    renderNavbar('client');
+    renderFooter();
+  </script>
+</body>
+  </html>
