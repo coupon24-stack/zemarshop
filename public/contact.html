@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./css/main.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/home.css" />
+  <link rel="stylesheet" href="./css/pages/auth.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="auth-page container" style="padding-top: 40px; padding-bottom: 40px;">
+    <div class="auth-card" style="max-width: 600px;">
+      
+      <div class="auth-header">
+        <h1>Contactez-nous</h1>
+        <p>Une question ? Un problème avec une commande ? Notre équipe est là pour vous aider.</p>
+      </div>
+
+      <form id="contactForm" onsubmit="event.preventDefault();">
+        
+        <div class="field">
+          <label class="field__label">Votre nom</label>
+          <input type="text" class="field__input" placeholder="Ex: Koffi Yao" required />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Votre adresse e-mail</label>
+          <input type="email" class="field__input" placeholder="votre@email.com" required />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Sujet</label>
+          <select class="field__select" required>
+            <option value="">Sélectionnez un sujet</option>
+            <option value="commande">Problème avec une commande</option>
+            <option value="vendeur">Devenir vendeur / Aide vendeur</option>
+            <option value="produit">Question sur un produit</option>
+            <option value="autre">Autre demande</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label">Votre message</label>
+          <textarea class="field__textarea" placeholder="Décrivez votre demande..." required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit" style="margin-top: 16px;">
+          Envoyer le message
+        </button>
+
+      </form>
+
+      <div class="auth-footer" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--color-border);">
+        <p style="font-weight: 600; color: var(--color-text); margin-bottom: 8px;">Autres moyens de nous joindre :</p>
+        <p>📞 +225 00 00 00 00 00</p>
+        <p>✉️ support@zemarshop.ci</p>
+        <p>📍 Abidjan, Côte d'Ivoire</p>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from './js/ui/navbar.js';
+    import { renderFooter } from './js/ui/footer.js';
+
+    renderNavbar('contact');
+    renderFooter();
+
+    // Simulation d'envoi du message
+    document.getElementById('contactForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmit');
+      
+      btn.textContent = 'Envoi en cours...';
+      btn.disabled = true;
+
+      setTimeout(() => {
+        alert("Votre message a bien été envoyé ! Notre équipe vous répondra sous 24h.");
+        window.location.href = './index.html';
+      }, 1500);
+    });
+  </script>
+</body>
+  </html>
