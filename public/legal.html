@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Informations Légales — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./css/main.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/home.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="container section">
+    <div style="background: white; padding: 32px 24px; border-radius: 16px; box-shadow: var(--shadow-sm); max-width: 800px; margin: 0 auto;">
+      
+      <h1 style="font-size: 28px; margin-bottom: 24px; color: var(--color-text);">Informations Légales</h1>
+
+      <!-- Section CGU -->
+      <section id="cgu" style="margin-bottom: 32px;">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: var(--color-primary);">1. Conditions Générales d'Utilisation (CGU)</h2>
+        <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6; color: var(--color-text-soft);">
+          Bienvenue sur ZemarShop. En utilisant notre plateforme, vous acceptez les présentes conditions générales. ZemarShop est une marketplace mettant en relation des vendeurs indépendants et des acheteurs en Côte d'Ivoire.
+        </p>
+        <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6; color: var(--color-text-soft);">
+          Les vendeurs sont responsables de la conformité et de la qualité des produits qu'ils publient. ZemarShop se réserve le droit de valider ou de retirer tout produit ne respectant pas nos normes.
+        </p>
+      </section>
+
+      <!-- Section Confidentialité -->
+      <section id="confidentialite" style="margin-bottom: 32px;">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: var(--color-primary);">2. Politique de Confidentialité</h2>
+        <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6; color: var(--color-text-soft);">
+          Nous collectons vos données personnelles (nom, numéro de téléphone, adresse) uniquement dans le but de traiter vos commandes et d'organiser la livraison. Vos données ne sont jamais revendues à des tiers.
+        </p>
+        <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6; color: var(--color-text-soft);">
+          Conformément aux lois en vigueur, vous disposez d'un droit d'accès, de modification et de suppression de vos données depuis votre espace client.
+        </p>
+      </section>
+
+      <!-- Section Livraison -->
+      <section id="livraison" style="margin-bottom: 32px;">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: var(--color-primary);">3. Politique de Livraison</h2>
+        <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6; color: var(--color-text-soft);">
+          ZemarShop centralise l'organisation des livraisons. Après validation de votre commande, notre équipe contacte le vendeur pour préparer le colis, puis vous contacte pour convenir d'une date et d'un lieu de livraison.
+        </p>
+        <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6; color: var(--color-text-soft);">
+          Les frais de livraison sont calculés en fonction de votre commune. Le paiement à la livraison est actuellement le mode principal.
+        </p>
+      </section>
+
+      <!-- Section Remboursement -->
+      <section id="remboursement">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: var(--color-primary);">4. Politique de Remboursement</h2>
+        <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6; color: var(--color-text-soft);">
+          Si vous recevez un produit défectueux ou non conforme à la description, vous devez contacter notre support dans les 48 heures suivant la livraison. 
+        </p>
+        <p style="margin-bottom: 12px; font-size: 14px; line-height: 1.6; color: var(--color-text-soft);">
+          Après vérification, un remboursement ou un échange sera organisé avec le vendeur concerné. La commission de 10% prélevée par ZemarShop sera également annulée pour cette transaction.
+        </p>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from './js/ui/navbar.js';
+    import { renderFooter } from './js/ui/footer.js';
+
+    renderNavbar('legal');
+    renderFooter();
+  </script>
+</body>
+</html>
