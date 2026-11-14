@@ -2,87 +2,113 @@
 
 import { renderNavbar } from '../ui/navbar.js';
 import { renderFooter } from '../ui/footer.js';
-import { getCategories, getAllProducts } from '../supabase-client.js'; // <-- Import mis à jour
+import { getCategories, getAllProducts } from '../supabase-client.js';
 import { formatPrice, discountPercent, primaryImage } from '../utils/format.js';
 
+// --- État de la page ---
 let allProducts = [];
 let currentCategory = 'all';
 let currentSearch = '';
 let currentSort = 'new';
 
+// --- Éléments DOM ---
 const shopGrid = document.getElementById('shopGrid');
 const noResults = document.getElementById('noResults');
 const filtersScroll = document.getElementById('filtersScroll');
 const searchInput = document.getElementById('searchInput');
 const sortSelect = document.getElementById('sortSelect');
 
+// --- Initialisation ---
 async function init() {
   renderNavbar('shop');
   renderFooter();
 
-  // ON CHARGE TOUS LES PRODUITS DIRECTEMENT
+  // Chargement de tous les produits
   allProducts = await getAllProducts();
 
+  // Chargement des catégories dans les filtres
   await loadCategories();
-  applyFilters(); 
+
+  // Vérifie s'il y a une recherche dans l'URL (ex: shop.html?q=robe)
+  handleSearchFromUrl();
+
+  // Affichage initial
+  applyFilters();
 }
 
+// --- Chargement des catégories ---
 async function loadCategories() {
-  const categories = await getCategories();
-  
-  const allBtn = document.createElement('button');
-  allBtn.className = 'filter-pill is-active';
-  allBtn.textContent = 'Tout voir';
-  allBtn.onclick = () => {
-    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('is-active'));
-    allBtn.classList.add('is-active');
-    currentCategory = 'all';
-    applyFilters();
-  };
-  filtersScroll.appendChild(allBtn);
+  try {
+    const categories = await getCategories();
+    
+    const allBtn = document.createElement('button');
+    allBtn.className = 'filter-pill is-active';
+    allBtn.textContent = 'Tout voir';
+    allBtn.dataset.id = 'all';
+    allBtn.onclick = () => selectCategory('all', allBtn);
+    filtersScroll.appendChild(allBtn);
 
-  categories.forEach(cat => {
-    const btn = document.createElement('button');
-    btn.className = 'filter-pill';
-    btn.textContent = cat.name;
-    btn.onclick = () => {
-      document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      currentCategory = cat.id.toString();
-      applyFilters();
-    };
-    filtersScroll.appendChild(btn);
-  });
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-pill';
+      btn.textContent = cat.name;
+      btn.dataset.id = cat.id.toString();
+      btn.dataset.slug = cat.slug;
+      btn.onclick = () => selectCategory(cat.id.toString(), btn);
+      filtersScroll.appendChild(btn);
+    });
+  } catch (error) {
+    console.error(error);
+  }
 }
 
+// --- Sélection d'une catégorie ---
+function selectCategory(catId, btnElement) {
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('is-active'));
+  btnElement.classList.add('is-active');
+  currentCategory = catId;
+  applyFilters();
+}
+
+// --- Application des filtres ---
 function applyFilters() {
   let filtered = allProducts.filter(p => {
+    // Filtre par catégorie (simulation pour la démo)
     if (currentCategory !== 'all') {
-      // Filtre factice pour la démo (affiche 1 produit sur 2)
       const productNum = parseInt(p.id.replace('p', ''), 10);
       if (productNum % 2 !== parseInt(currentCategory, 10) % 2) return false;
     }
-    if (currentSearch && !p.name.toLowerCase().includes(currentSearch.toLowerCase())) {
-      return false;
+    // Filtre par recherche
+    if (currentSearch) {
+      const q = currentSearch.toLowerCase();
+      if (!p.name.toLowerCase().includes(q)) return false;
     }
     return true;
   });
 
+  // Tri
   filtered.sort((a, b) => {
     if (currentSort === 'price_asc') return a.price_fcfa - b.price_fcfa;
     if (currentSort === 'price_desc') return b.price_fcfa - a.price_fcfa;
     return 0;
   });
 
-  if (filtered.length === 0) {
+  // Affichage
+  renderGrid(filtered);
+}
+
+// --- Affichage de la grille ---
+function renderGrid(products) {
+  if (products.length === 0) {
     shopGrid.innerHTML = '';
     noResults.classList.remove('hidden');
   } else {
     noResults.classList.add('hidden');
-    shopGrid.innerHTML = filtered.map(createProductCard).join('');
+    shopGrid.innerHTML = products.map(createProductCard).join('');
   }
 }
 
+// --- Composant Carte Produit ---
 function createProductCard(product) {
   const img = primaryImage(product);
   const discount = discountPercent(product.price_fcfa, product.old_price_fcfa);
@@ -95,6 +121,11 @@ function createProductCard(product) {
       <div class="product-card__image-wrap">
         <img class="product-card__image" src="${img}" alt="${product.name}" loading="lazy" />
         <div class="product-card__badges">${discountBadge}</div>
+        <button class="product-card__favorite" aria-label="Favori">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
       </div>
       <div class="product-card__body">
         <div class="product-card__shop">${shopName}</div>
@@ -111,7 +142,38 @@ function createProductCard(product) {
   `;
 }
 
-searchInput.addEventListener('input', (e) => { currentSearch = e.target.value; applyFilters(); });
-sortSelect.addEventListener('change', (e) => { currentSort = e.target.value; applyFilters(); });
+// --- Écouteurs d'événements ---
+searchInput.addEventListener('input', (e) => {
+  currentSearch = e.target.value;
+  applyFilters();
+});
 
+sortSelect.addEventListener('change', (e) => {
+  currentSort = e.target.value;
+  applyFilters();
+});
+
+// --- GESTION DE LA RECHERCHE DEPUIS L'URL ---
+function handleSearchFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const searchQuery = params.get('q');
+  const catParam = params.get('category');
+
+  if (searchQuery) {
+    if (searchInput) {
+      searchInput.value = searchQuery;
+      currentSearch = searchQuery;
+    }
+  }
+
+  if (catParam) {
+    // On attend un tout petit peu que les catégories soient créées
+    setTimeout(() => {
+      const btn = document.querySelector(`.filter-pill[data-slug="${catParam}"]`);
+      if (btn) btn.click();
+    }, 100);
+  }
+}
+
+// --- Lancer l'application ---
 init();
