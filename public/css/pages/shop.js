@@ -23,16 +23,16 @@ async function init() {
   renderNavbar('shop');
   renderFooter();
 
-  // Chargement de tous les produits
+  // 1. On charge TOUS les produits
   allProducts = await getAllProducts();
 
-  // Chargement des catégories dans les filtres
+  // 2. On charge les catégories (filtres)
   await loadCategories();
 
-  // Vérifie s'il y a une recherche dans l'URL (ex: shop.html?q=robe)
+  // 3. On vérifie si on vient d'une recherche (depuis l'accueil)
   handleSearchFromUrl();
 
-  // Affichage initial
+  // 4. On affiche la grille
   applyFilters();
 }
 
@@ -73,14 +73,14 @@ function selectCategory(catId, btnElement) {
 // --- Application des filtres ---
 function applyFilters() {
   let filtered = allProducts.filter(p => {
-    // Filtre par catégorie (simulation pour la démo)
+    // Filtre catégorie (démo)
     if (currentCategory !== 'all') {
       const productNum = parseInt(p.id.replace('p', ''), 10);
       if (productNum % 2 !== parseInt(currentCategory, 10) % 2) return false;
     }
-    // Filtre par recherche
+    // Filtre recherche (insensible à la casse)
     if (currentSearch) {
-      const q = currentSearch.toLowerCase();
+      const q = currentSearch.toLowerCase().trim();
       if (!p.name.toLowerCase().includes(q)) return false;
     }
     return true;
@@ -93,7 +93,6 @@ function applyFilters() {
     return 0;
   });
 
-  // Affichage
   renderGrid(filtered);
 }
 
@@ -143,15 +142,19 @@ function createProductCard(product) {
 }
 
 // --- Écouteurs d'événements ---
-searchInput.addEventListener('input', (e) => {
-  currentSearch = e.target.value;
-  applyFilters();
-});
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    currentSearch = e.target.value;
+    applyFilters();
+  });
+}
 
-sortSelect.addEventListener('change', (e) => {
-  currentSort = e.target.value;
-  applyFilters();
-});
+if (sortSelect) {
+  sortSelect.addEventListener('change', (e) => {
+    currentSort = e.target.value;
+    applyFilters();
+  });
+}
 
 // --- GESTION DE LA RECHERCHE DEPUIS L'URL ---
 function handleSearchFromUrl() {
@@ -160,14 +163,11 @@ function handleSearchFromUrl() {
   const catParam = params.get('category');
 
   if (searchQuery) {
-    if (searchInput) {
-      searchInput.value = searchQuery;
-      currentSearch = searchQuery;
-    }
+    currentSearch = searchQuery;
+    if (searchInput) searchInput.value = searchQuery;
   }
 
   if (catParam) {
-    // On attend un tout petit peu que les catégories soient créées
     setTimeout(() => {
       const btn = document.querySelector(`.filter-pill[data-slug="${catParam}"]`);
       if (btn) btn.click();
