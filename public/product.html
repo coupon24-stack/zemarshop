@@ -55,29 +55,29 @@
         Un produit de qualité supérieure, disponible exclusivement sur ZemarShop.
       </p>
 
+      <!-- COULEURS ET TAILLES AVEC FONCTIONS -->
       <div class="product-variants">
         <div class="variant-group">
           <span class="variant-label">Couleur</span>
-          <div class="variant-options">
-            <button class="variant-btn is-active" style="background:#222"></button>
-            <button class="variant-btn" style="background:#E60023"></button>
-            <button class="variant-btn" style="background:#1E4FA8"></button>
+          <div class="variant-options" id="colorOptions">
+            <button class="variant-btn is-active" style="background:#222" onclick="selectColor('Noir', this)"></button>
+            <button class="variant-btn" style="background:#E60023" onclick="selectColor('Rouge', this)"></button>
+            <button class="variant-btn" style="background:#1E4FA8" onclick="selectColor('Bleu', this)"></button>
           </div>
         </div>
         
         <div class="variant-group">
           <span class="variant-label">Taille</span>
-          <div class="variant-options">
-            <button class="variant-btn is-active">S</button>
-            <button class="variant-btn">M</button>
-            <button class="variant-btn">L</button>
+          <div class="variant-options" id="sizeOptions">
+            <button class="variant-btn is-active" onclick="selectSize('S', this)">S</button>
+            <button class="variant-btn" onclick="selectSize('M', this)">M</button>
+            <button class="variant-btn" onclick="selectSize('L', this)">L</button>
           </div>
         </div>
       </div>
 
       <div class="product-actions">
         <button class="btn btn--outline btn--lg" id="btnAddToCart">Ajouter au panier</button>
-        <!-- AJOUT D'UN ID POUR LE BOUTON COMMANDER -->
         <button class="btn btn--primary btn--lg" id="btnBuyNow">Commander maintenant</button>
       </div>
     </div>
@@ -108,7 +108,7 @@
     const productId = params.get('id');
     const product = productsDB[productId] || productsDB['p1'];
 
-    // Remplissage des données
+    // Remplissage
     document.getElementById('productImage').src = product.image;
     document.getElementById('thumb1').src = product.image;
     document.getElementById('thumb2').src = product.image;
@@ -128,16 +128,42 @@
       document.getElementById('productDiscount').style.display = 'none';
     }
 
-    // --- FONCTION D'AJOUT AU PANIER ---
+    // --- VARIABLES POUR LES CHOIX ---
+    let selectedColor = 'Noir';
+    let selectedSize = 'S';
+
+    // --- FONCTIONS DE SÉLECTION ---
+    window.selectColor = function(color, btn) {
+      selectedColor = color;
+      document.querySelectorAll('#colorOptions .variant-btn').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+    };
+
+    window.selectSize = function(size, btn) {
+      selectedSize = size;
+      document.querySelectorAll('#sizeOptions .variant-btn').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+    };
+
+    // --- AJOUT AU PANIER ---
     function addToCart() {
       let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
       
-      const existingItem = cart.find(item => item.id === product.id);
+      // ID unique basé sur produit + couleur + taille
+      const uniqueId = `${product.id}-${selectedColor}-${selectedSize}`;
+      
+      const existingItem = cart.find(item => item.uniqueId === uniqueId);
       
       if (existingItem) {
         existingItem.quantity += 1;
       } else {
-        cart.push({ id: product.id, quantity: 1 });
+        cart.push({ 
+          id: product.id, 
+          uniqueId: uniqueId,
+          color: selectedColor,
+          size: selectedSize,
+          quantity: 1 
+        });
       }
       
       localStorage.setItem('zemar_cart', JSON.stringify(cart));
@@ -151,15 +177,14 @@
       }
     }
 
-    // --- BOUTON AJOUTER AU PANIER (Reste sur la page) ---
+    // BOUTON AJOUTER
     document.getElementById('btnAddToCart').addEventListener('click', function(e) {
       const btn = e.currentTarget;
       addToCart();
       
-      // Feedback visuel
       const originalText = btn.innerHTML;
       btn.innerHTML = '✓ Ajouté !';
-      btn.style.backgroundColor = '#16A34A'; // Vert
+      btn.style.backgroundColor = '#16A34A'; 
       btn.style.color = '#fff';
       btn.style.borderColor = '#16A34A';
       
@@ -171,13 +196,12 @@
       }, 2000);
     });
 
-    // --- BOUTON COMMANDER MAINTENANT (Redirige vers le panier) ---
+    // BOUTON COMMANDER
     document.getElementById('btnBuyNow').addEventListener('click', function() {
-      addToCart(); // On ajoute d'abord au panier
-      window.location.href = './cart.html'; // Puis on redirige vers le panier
+      addToCart();
+      window.location.href = './cart.html';
     });
 
-    // Afficher la page en douceur
     const content = document.getElementById('productContent');
     content.style.visibility = 'visible';
     content.style.opacity = '1';
