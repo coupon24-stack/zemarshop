@@ -26,7 +26,7 @@
         <p>Découvrez des milliers de produits et commandez facilement depuis votre téléphone.</p>
         <div class="hero__cta">
           <a href="./shop.html" class="btn btn--primary btn--lg">Découvrir la boutique</a>
-          <a href="./auth/register-vendor.html" class="btn btn--outline btn--lg">Devenir vendeur</a>
+          <a href="./register-vendor.html" class="btn btn--outline btn--lg">Devenir vendeur</a>
         </div>
         <ul class="hero__stats">
           <li><strong>1000+</strong><span>Produits</span></li>
@@ -46,14 +46,15 @@
     </div>
   </section>
 
+  <!-- FORMULAIRE DE RECHERCHE MIS À JOUR -->
   <section class="search-section">
     <div class="container">
-      <form class="search-form" onsubmit="event.preventDefault();">
+      <form class="search-form" id="searchFormHome">
         <div class="search-form__field">
           <svg class="search-form__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
           </svg>
-          <input type="search" placeholder="Rechercher un produit, une marque, une catégorie..." aria-label="Rechercher" />
+          <input type="search" id="searchInputHome" placeholder="Rechercher un produit, une marque, une catégorie..." aria-label="Rechercher" />
         </div>
         <button type="submit" class="btn btn--primary">Rechercher</button>
       </form>
@@ -127,7 +128,7 @@
         <h2>Vous avez des produits à vendre ?</h2>
         <p>Rejoignez ZemarShop et développez votre activité.</p>
       </div>
-      <a href="./auth/register-vendor.html" class="btn btn--white">Devenir vendeur</a>
+      <a href="./register-vendor.html" class="btn btn--white">Devenir vendeur</a>
     </div>
   </section>
 
@@ -141,6 +142,15 @@
 
     renderNavbar('home');
     renderFooter();
+
+    // --- RECHERCHE FONCTIONNELLE ---
+    document.getElementById('searchFormHome').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const query = document.getElementById('searchInputHome').value.trim();
+      if (query) {
+        window.location.href = `./shop.html?q=${encodeURIComponent(query)}`;
+      }
+    });
 
     async function loadCategories() {
       const container = document.getElementById('categoriesGrid');
@@ -205,29 +215,5 @@
     loadPopular();
     loadNew();
   </script>
-
-  <!-- GESTION INTELLIGENTE DU SCROLL -->
-  <script>
-    if ('scrollRestoration' in history) {
-      history.scrollRestoration = 'manual'; 
-    }
-
-    window.addEventListener('beforeunload', () => {
-      sessionStorage.setItem('homeScrollPos', window.scrollY);
-    });
-
-    window.addEventListener('load', () => {
-      const scrollPos = sessionStorage.getItem('homeScrollPos');
-      const navigationEntries = performance.getEntriesByType("navigation");
-      const isBackNavigation = navigationEntries.length > 0 && navigationEntries[0].type === "back_forward";
-
-      if (isBackNavigation && scrollPos) {
-        window.scrollTo({ top: parseInt(scrollPos, 10), behavior: 'instant' });
-      } else {
-        window.scrollTo(0, 0);
-        sessionStorage.removeItem('homeScrollPos');
-      }
-    });
-  </script>
 </body>
-</html>
+        </html>
