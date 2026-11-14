@@ -32,17 +32,30 @@
           <svg class="search-form__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
           </svg>
-          <input type="search" placeholder="Rechercher..." />
+          <!-- ID AJOUTÉ ICI -->
+          <input type="search" id="searchInput" placeholder="Rechercher dans la boutique..." />
         </div>
         <button type="submit" class="btn btn--primary">Rechercher</button>
       </form>
 
       <div class="sort-wrapper">
         <label>Trier par :</label>
-        <select class="field__select">
-          <option>Nouveautés</option>
-          <option>Populaires</option>
+        <!-- ID AJOUTÉ ICI -->
+        <select class="field__select" id="sortSelect">
+          <option value="new">Nouveautés</option>
+          <option value="popular">Populaires</option>
+          <option value="price_asc">Prix croissant</option>
+          <option value="price_desc">Prix décroissant</option>
         </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filtres Catégories -->
+  <section class="shop-filters">
+    <div class="container">
+      <div class="filters-scroll" id="filtersScroll">
+        <!-- Les boutons de filtres seront injectés par JS -->
       </div>
     </div>
   </section>
@@ -50,99 +63,17 @@
   <section class="shop-products section">
     <div class="container">
       <div class="products-grid" id="shopGrid">
-        
-        <article class="product-card">
-          <div class="product-card__image-wrap">
-            <img class="product-card__image" src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600" alt="Robe" />
-          </div>
-          <div class="product-card__body">
-            <div class="product-card__shop">Boutique Awa</div>
-            <h3 class="product-card__name">Robe africaine wax élégante</h3>
-            <div class="product-card__prices">
-              <span class="product-card__price">15 000 FCFA</span>
-            </div>
-            <div class="product-card__actions">
-              <a href="./product.html?id=p1" class="btn btn--primary">Voir le produit</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="product-card">
-          <div class="product-card__image-wrap">
-            <img class="product-card__image" src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600" alt="Sneakers" />
-          </div>
-          <div class="product-card__body">
-            <div class="product-card__shop">Kicks CI</div>
-            <h3 class="product-card__name">Sneakers blanches homme</h3>
-            <div class="product-card__prices">
-              <span class="product-card__price">22 500 FCFA</span>
-            </div>
-            <div class="product-card__actions">
-              <a href="./product.html?id=p2" class="btn btn--primary">Voir le produit</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="product-card">
-          <div class="product-card__image-wrap">
-            <img class="product-card__image" src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600" alt="Sac" />
-          </div>
-          <div class="product-card__body">
-            <div class="product-card__shop">Élégance Shop</div>
-            <h3 class="product-card__name">Sac à main cuir premium</h3>
-            <div class="product-card__prices">
-              <span class="product-card__price">18 000 FCFA</span>
-            </div>
-            <div class="product-card__actions">
-              <a href="./product.html?id=p3" class="btn btn--primary">Voir le produit</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="product-card">
-          <div class="product-card__image-wrap">
-            <img class="product-card__image" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600" alt="Casque" />
-          </div>
-          <div class="product-card__body">
-            <div class="product-card__shop">TechZone</div>
-            <h3 class="product-card__name">Casque Bluetooth sans fil</h3>
-            <div class="product-card__prices">
-              <span class="product-card__price">12 500 FCFA</span>
-            </div>
-            <div class="product-card__actions">
-              <a href="./product.html?id=p4" class="btn btn--primary">Voir le produit</a>
-            </div>
-          </div>
-        </article>
-
+        <!-- Les produits seront injectés par JS -->
+      </div>
+      <div id="noResults" class="hidden" style="text-align:center; padding: 40px; color: var(--color-text-soft);">
+        Aucun produit trouvé pour votre recherche.
       </div>
     </div>
   </section>
 
   <footer class="footer" id="footer"></footer>
 
-  <script type="module">
-    import { renderNavbar } from './js/ui/navbar.js';
-    import { renderFooter } from './js/ui/footer.js';
-    
-    renderNavbar('shop');
-    renderFooter();
-  </script>
-
-  <!-- GESTION INSTANTANÉE DU SCROLL -->
-  <script>
-    if ('scrollRestoration' in history) {
-      history.scrollRestoration = 'manual'; 
-    }
-    
-    window.addEventListener('beforeunload', () => {
-      sessionStorage.setItem('shopScrollPos', window.scrollY);
-    });
-    
-    const shopScroll = sessionStorage.getItem('shopScrollPos');
-    if (shopScroll) {
-      window.scrollTo({ top: parseInt(shopScroll, 10), behavior: 'instant' });
-    }
-  </script>
+  <!-- On utilise le script shop.js qui gère la recherche et les filtres -->
+  <script type="module" src="./js/pages/shop.js"></script>
 </body>
 </html>
