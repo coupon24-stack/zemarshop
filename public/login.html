@@ -26,8 +26,8 @@
         <p>Content de vous revoir sur ZemarShop !</p>
       </div>
 
-      <!-- Zone de message (jaune pour le test) -->
-      <div id="globalError" style="display: none; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; text-align: center; font-weight: bold;"></div>
+      <!-- Zone d'erreur (cachée par défaut) -->
+      <div id="globalError" style="display: none; background: #FEE2E2; color: #DC2626; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; text-align: center; font-weight: bold;"></div>
 
       <form id="loginForm">
         
@@ -39,6 +39,13 @@
         <div class="field">
           <label class="field__label">Mot de passe</label>
           <input type="password" class="field__input" id="password" placeholder="••••••••" required />
+        </div>
+
+        <div class="auth-actions" style="margin-top: 8px;">
+          <label class="auth-checkbox">
+            <input type="checkbox" /> Se souvenir de moi
+          </label>
+          <a href="#" class="auth-link">Mot de passe oublié ?</a>
         </div>
 
         <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit" style="margin-top: 16px;">
@@ -85,16 +92,14 @@
       });
 
       if (authError) {
-        errorEl.style.background = '#FEE2E2';
-        errorEl.style.color = '#DC2626';
-        errorEl.textContent = "Erreur : " + authError.message;
+        errorEl.textContent = "Email ou mot de passe incorrect.";
         errorEl.style.display = 'block';
         btn.textContent = 'Se connecter';
         btn.disabled = false;
         return;
       }
 
-      // 2. Récupération du profil
+      // 2. Récupération du profil et du rôle
       const { data: profile, error: profileError } = await sb
         .from('profiles')
         .select('role')
@@ -102,25 +107,14 @@
         .single();
 
       if (profileError || !profile) {
-        errorEl.style.background = '#FEE2E2';
-        errorEl.style.color = '#DC2626';
-        errorEl.textContent = "Profil introuvable : " + (profileError ? profileError.message : "Aucun profil.");
+        errorEl.textContent = "Profil introuvable. Contactez le support.";
         errorEl.style.display = 'block';
         btn.textContent = 'Se connecter';
         btn.disabled = false;
         return;
       }
 
-      // --- TEST VISUEL : On affiche le rôle en jaune ---
-      errorEl.style.background = 'yellow';
-      errorEl.style.color = 'black';
-      errorEl.textContent = "Rôle détecté : " + profile.role;
-      errorEl.style.display = 'block';
-      
-      // On attend 3 secondes pour que tu puisses lire
-      await new Promise(r => setTimeout(r, 3000));
-
-      // 3. Redirection
+      // 3. Redirection stricte selon le rôle
       if (profile.role === 'admin') {
         window.location.href = './admin/dashboard.html';
       } else if (profile.role === 'vendor') {
