@@ -19,6 +19,7 @@
   <header class="navbar" id="navbar"></header>
 
   <main class="container section">
+    
     <!-- En-tête du profil -->
     <div class="client-header">
       <div class="client-avatar" id="userAvatar">...</div>
@@ -37,7 +38,6 @@
         <a href="#" class="client-nav-link">Mes adresses</a>
         <a href="#" class="client-nav-link">Mon profil</a>
         <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--color-border);">
-        <!-- Bouton de déconnexion -->
         <a href="#" class="client-nav-link" id="btnLogout" style="color: var(--color-danger);">Déconnexion</a>
       </aside>
 
@@ -48,7 +48,7 @@
           <div class="stat-card">
             <span class="stat-icon">📦</span>
             <div>
-              <strong>0</strong>
+              <strong id="statOrders">0</strong>
               <span>Commandes</span>
             </div>
           </div>
@@ -62,8 +62,10 @@
         </div>
 
         <div class="client-section">
-          <h2>Dernières commandes</h2>
-          <p style="color: var(--color-text-soft); font-size: 14px;">Vous n'avez pas encore passé de commande.</p>
+          <h2>Mes commandes</h2>
+          <div id="ordersList">
+            <p style="color: var(--color-text-soft); font-size: 14px;">Chargement de vos commandes...</p>
+          </div>
         </div>
 
       </div>
@@ -76,54 +78,94 @@
     import { renderNavbar } from '../js/ui/navbar.js';
     import { renderFooter } from '../js/ui/footer.js';
     import { initSupabase } from '../js/supabase-client.js';
+    import { formatPrice } from '../js/utils/format.js';
 
     renderNavbar('client');
     renderFooter();
 
-    async function checkUser() {
+    // Les différents statuts
+    const statusLabels = {
+      'new': { text: 'Nouvelle', color: 'badge--warning' },
+      'confirmed': { text: 'Confirmée', color: 'badge--info' },
+      'delivering': { text: 'En livraison', color: 'badge--warning' },
+      'delivered': { text: 'Livrée', color: 'badge--success' },
+      'cancelled': { text: 'Annulée', color: 'badge--danger' }
+    };
+
+    async function loadClientDashboard() {
       const sb = await initSupabase();
       
-      // 1. On demande à Supabase si quelqu'un est connecté
-      const { data: { session }, error: sessionError } = await sb.auth.getSession();
-
-      if (sessionError || !session) {
-        // Si personne n'est connecté, on renvoie vers la page de login
+      // 1. Vérifier que l'utilisateur est connecté
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
         window.location.href = '../login.html';
         return;
       }
 
-      // 2. On récupère le profil (nom, email) dans la base de données
-      const { data: profile, error: profileError } = await sb
-        .from('profiles')
-        .select('full_name, email')
-        .eq('id', session.user.id)
-        .single();
+      // 2. Afficher le profil
+      const { data: profile } = await sb.from('profiles').select('full_name, email').eq('id', session.user.id).single();
+      
+      if (profile) {
+        document.getElementById('userName').textContent = "Bonjour, " + (profile.full_name || 'Client') + " 👋";
+        document.getElementById('userEmail').textContent = profile.email;
+        
+        const initials = (profile.full_name || 'C').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        document.getElementById('userAvatar').textContent = initials;
+      }
 
-      // Si erreur ou si le profil n'existe pas (ex: trigger raté)
-      if (profileError || !profile) {
-        document.getElementById('userName').textContent = "Profil introuvable";
-        document.getElementById('userEmail').textContent = "Veuillez contacter le support.";
-        document.getElementById('userAvatar').textContent = "?";
-        console.error("Erreur profil :", profileError);
+      // 3. Charger les commandes du client
+      const { data: orders, error } = await sb
+        .from('orders')
+        .select('*, order_items ( product_name, quantity, unit_price_fcfa )')
+        .eq('client_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      const listEl = document.getElementById('ordersList');
+      
+      if (error) {
+        listEl.innerHTML = '<p style="color: var(--color-danger);">Erreur lors du chargement des commandes.</p>';
         return;
       }
 
-      // 3. On affiche les vraies données
-      document.getElementById('userName').textContent = "Bonjour, " + (profile.full_name || 'Utilisateur') + " 👋";
-      document.getElementById('userEmail').textContent = profile.email || session.user.email;
-      
-      // Créer les initiales
-      const initials = (profile.full_name || 'U')
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .toUpperCase()
-        .substring(0, 2);
-      
-      document.getElementById('userAvatar').textContent = initials;
+      document.getElementById('statOrders').textContent = orders.length;
+
+      if (orders.length === 0) {
+        listEl.innerHTML = '<p style="color: var(--color-text-soft); font-size: 14px;">Vous n\'avez pas encore passé de commande.</p>';
+        return;
+      }
+
+      // 4. Afficher les commandes
+      listEl.innerHTML = orders.map(o => {
+        const status = statusLabels[o.status] || { text: o.status, color: '' };
+        
+        // Afficher la liste des produits
+        const itemsHtml = o.order_items.map(item => `
+          <div style="font-size: 13px; color: var(--color-text-soft); margin-bottom: 2px;">
+            ${item.quantity} x ${item.product_name} — ${formatPrice(item.unit_price_fcfa)}
+          </div>
+        `).join('');
+
+        return `
+          <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px; box-shadow: var(--shadow-sm); border-left: 4px solid var(--color-primary);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <strong>Commande ${o.order_number}</strong>
+              <span class="badge ${status.color}">${status.text}</span>
+            </div>
+            
+            <div style="margin-bottom: 12px;">
+              ${itemsHtml}
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--color-border); padding-top: 12px;">
+              <span style="font-size: 14px;">Total :</span>
+              <strong style="color: var(--color-primary);">${formatPrice(o.total_fcfa)}</strong>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
-    // 4. Gestion de la déconnexion
+    // Déconnexion
     document.getElementById('btnLogout').addEventListener('click', async (e) => {
       e.preventDefault();
       const sb = await initSupabase();
@@ -131,7 +173,7 @@
       window.location.href = '../index.html';
     });
 
-    checkUser();
+    loadClientDashboard();
   </script>
 </body>
 </html>
