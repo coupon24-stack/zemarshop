@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commande réussie — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./css/main.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/home.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="container section" style="min-height: 60vh; display: flex; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 48px 24px; border-radius: 16px; box-shadow: var(--shadow-lg); text-align: center; max-width: 500px;">
+      <div style="font-size: 64px; margin-bottom: 16px;">🎉</div>
+      <h1 style="font-size: 24px; margin-bottom: 8px;">Merci pour votre commande !</h1>
+      <p style="color: var(--color-text-soft); font-size: 14px; margin-bottom: 24px;">
+        Votre commande a bien été enregistrée. Notre équipe va contacter le vendeur, puis vous contacter par téléphone pour organiser la livraison.
+      </p>
+      
+      <div style="background: var(--color-bg-alt); padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+        <p style="font-size: 12px; color: var(--color-text-soft); margin-bottom: 4px;">Numéro de commande</p>
+        <strong style="font-size: 16px; color: var(--color-primary);" id="orderNumberDisplay">ZM-...</strong>
+      </div>
+
+      <a href="./client/dashboard.html" class="btn btn--primary btn--lg btn--full" style="margin-bottom: 12px;">
+        Suivre ma commande
+      </a>
+      <a href="./index.html" class="btn btn--ghost btn--full">
+        Retour à l'accueil
+      </a>
+    </div>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from './js/ui/navbar.js';
+    import { renderFooter } from './js/ui/footer.js';
+
+    renderNavbar('checkout');
+    renderFooter();
+
+    // On récupère le numéro de commande depuis l'URL (ex: order-success.html?num=ZM-1234)
+    const params = new URLSearchParams(window.location.search);
+    const orderNum = params.get('num');
+    if (orderNum) {
+      document.getElementById('orderNumberDisplay').textContent = orderNum;
+    }
+  </script>
+</body>
+</html>
