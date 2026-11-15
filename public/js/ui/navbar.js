@@ -1,10 +1,16 @@
 // public/js/ui/navbar.js
-// Génère la navbar ZemarShop et gère le menu mobile
 
-export function renderNavbar(activePage = 'home') {
+import { initSupabase } from '../supabase-client.js';
+
+export async function renderNavbar(activePage = 'home') {
   const nav = document.getElementById('navbar');
   if (!nav) return;
 
+  // 1. Vérifier la session Supabase
+  const sb = await initSupabase();
+  const { data: { session } } = await sb.auth.getSession();
+
+  // 2. Définir les liens de navigation
   const links = [
     { href: 'index.html', label: 'Accueil', key: 'home' },
     { href: 'shop.html', label: 'Boutique', key: 'shop' },
@@ -32,23 +38,22 @@ export function renderNavbar(activePage = 'home') {
     .map(l => `<a href="${l.href}">${l.label}</a>`)
     .join('');
 
-  let authBtnHref = './login.html';
-  let authBtnText = 'Connexion';
-  let hideRegister = false;
+  // 3. Gérer le bouton de connexion selon la session
+  let authBtnHtml = '';
+  let mobileAuthBtnHtml = '';
 
-  if (isClientArea) {
-    authBtnHref = './dashboard.html';
-    authBtnText = 'Mon Compte';
-    hideRegister = true;
-  } else if (isVendorArea || isAdminArea) {
-    authBtnHref = './dashboard.html';
-    authBtnText = 'Mon Espace';
-    hideRegister = true;
+  if (session) {
+    // L'utilisateur est connecté
+    const userEmail = session.user.email;
+    authBtnHtml = `<a href="${basePath}client/dashboard.html" class="btn btn--ghost btn--sm navbar__hide-mobile">Mon Compte</a>`;
+    mobileAuthBtnHtml = `<a href="${basePath}client/dashboard.html" class="btn btn--ghost btn--full">Mon Compte</a>`;
+  } else {
+    // L'utilisateur n'est pas connecté
+    authBtnHtml = `<a href="${basePath}login.html" class="btn btn--ghost btn--sm navbar__hide-mobile">Connexion</a>`;
+    mobileAuthBtnHtml = `<a href="${basePath}login.html" class="btn btn--ghost btn--full">Connexion</a>`;
   }
 
-  const registerBtn = hideRegister ? '' : 
-    `<a href="${basePath}register-client.html" class="btn btn--primary btn--sm navbar__hide-mobile">Créer un compte</a>`;
-
+  // 4. Construire la navbar
   const svgLogo = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40" height="36" style="display: block;">
       <g fill="none" stroke="#E60023" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -80,10 +85,9 @@ export function renderNavbar(activePage = 'home') {
             <circle cx="18" cy="20" r="1.5"/>
             <path d="M6 6 5 3H2"/>
           </svg>
-          <span class="cart-count" id="cartCount" style="display: none;">0</span>
+          <span class="cart-count" id="cartCount">0</span>
         </a>
-        <a href="${authBtnHref}" class="btn btn--ghost btn--sm navbar__hide-mobile">${authBtnText}</a>
-        ${registerBtn}
+        ${authBtnHtml}
         <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -93,12 +97,12 @@ export function renderNavbar(activePage = 'home') {
       <nav class="mobile-drawer__links">
         ${mobileLinks}
         <hr />
-        <a href="${authBtnHref}" class="btn btn--ghost btn--full">${authBtnText}</a>
-        ${hideRegister ? '' : '<a href="./register-client.html" class="btn btn--primary btn--full">Créer un compte</a>'}
+        ${mobileAuthBtnHtml}
       </nav>
     </div>
   `;
 
+  // Comportements
   const hamburger = document.getElementById('hamburger');
   const drawer = document.getElementById('mobileDrawer');
   hamburger?.addEventListener('click', () => {
@@ -116,22 +120,13 @@ export function renderNavbar(activePage = 'home') {
     nav.classList.toggle('is-scrolled', window.scrollY > 10);
   }, { passive: true });
 
-  // MISE À JOUR DU BADGE AU CHARGEMENT DE LA PAGE
   updateCartCount();
 }
 
-// Fonction globale qui lit le localStorage et affiche/cache le badge
 export function updateCartCount() {
   const el = document.getElementById('cartCount');
   if (!el) return;
-
   const count = parseInt(localStorage.getItem('zemar_cart_count') || '0', 10);
-
-  if (count > 0) {
-    el.textContent = count;
-    el.style.display = 'flex'; 
-  } else {
-    el.textContent = '0';
-    el.style.display = 'none';
-  }
+  el.textContent = count > 0 ? String(count) : '';
+  el.style.display = count > 0 ? 'flex' : 'none';
 }
