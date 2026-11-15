@@ -19,6 +19,15 @@
   <header class="navbar" id="navbar"></header>
 
   <main class="cart-page container section">
+    
+    <!-- BOUTON DE TEST POUR VIDER LE PANIER -->
+    <div style="margin-bottom: 20px;">
+      <button onclick="localStorage.removeItem('zemar_cart'); localStorage.removeItem('zemar_cart_count'); window.location.reload();" 
+              style="background: #E60023; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">
+        ⚠️ Vider tout le panier (Nettoyage)
+      </button>
+    </div>
+
     <h1 class="cart-page__title">Mon Panier</h1>
 
     <div id="emptyCart" class="cart-empty hidden">
@@ -73,7 +82,7 @@
     const DELIVERY_FEE = 1500;
     let cart = [];
 
-    // 1. On récupère le panier avec les vraies infos
+    // 1. On récupère le panier
     try {
       const saved = localStorage.getItem('zemar_cart');
       if (saved) cart = JSON.parse(saved);
