@@ -59,6 +59,18 @@
     </div>
   </section>
 
+  <!-- FILTRE PAR PRIX (NOUVEAU) -->
+  <section class="shop-price-filter" style="padding: 12px 0; background: white; border-bottom: 1px solid var(--color-border);">
+    <div class="container" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <span style="font-size: 14px; font-weight: 600; color: var(--color-text);">Prix (FCFA) :</span>
+      <input type="number" id="priceMin" placeholder="Min" style="width: 100px; padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px;">
+      <span style="color: var(--color-text-soft);">à</span>
+      <input type="number" id="priceMax" placeholder="Max" style="width: 100px; padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px;">
+      <button class="btn btn--primary btn--sm" onclick="applyPriceFilter()">Filtrer</button>
+      <button class="btn btn--ghost btn--sm" onclick="resetPriceFilter()">Réinitialiser</button>
+    </div>
+  </section>
+
   <section class="shop-products section">
     <div class="container">
       <div class="products-grid" id="shopGrid">
@@ -91,6 +103,8 @@
     let allProducts = [];
     let userFavorites = []; 
     let currentCategory = 'all';
+    let currentPriceMin = 0;
+    let currentPriceMax = Infinity;
 
     async function loadShop() {
       const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
@@ -142,6 +156,11 @@
       let filtered = allProducts.filter(p => {
         if (query && !p.name.toLowerCase().includes(query)) return false;
         if (currentCategory !== 'all' && p.category_id !== currentCategory) return false;
+        
+        // Filtre par prix
+        if (p.price_fcfa < currentPriceMin) return false;
+        if (currentPriceMax !== Infinity && p.price_fcfa > currentPriceMax) return false;
+        
         return true;
       });
 
@@ -168,14 +187,12 @@
         return `
           <article class="product-card" style="position: relative;">
             
-            <!-- L'image elle-même est cliquable -->
             <div class="product-card__image-wrap">
               <img class="product-card__image" src="${img}" alt="${p.name}" loading="lazy" 
                    onclick="window.location.href='./product.html?id=${p.id}'" style="cursor: pointer;" />
               <div class="product-card__badges">${badge}</div>
             </div>
 
-            <!-- Le bouton favori est totalement indépendant -->
             <button class="product-card__favorite ${favClass}" onclick="window.toggleFavorite('${p.id}', this)" aria-label="Favori" style="position: absolute; top: 8px; right: 8px; z-index: 10;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -209,6 +226,25 @@
         renderGrid();
       }
     });
+
+    // --- FILTRE PAR PRIX ---
+    window.applyPriceFilter = function() {
+      const minInput = document.getElementById('priceMin').value;
+      const maxInput = document.getElementById('priceMax').value;
+      
+      currentPriceMin = minInput ? parseFloat(minInput) : 0;
+      currentPriceMax = maxInput ? parseFloat(maxInput) : Infinity;
+      
+      renderGrid();
+    };
+
+    window.resetPriceFilter = function() {
+      document.getElementById('priceMin').value = '';
+      document.getElementById('priceMax').value = '';
+      currentPriceMin = 0;
+      currentPriceMax = Infinity;
+      renderGrid();
+    };
 
     loadShop();
 
