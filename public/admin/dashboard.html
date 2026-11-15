@@ -66,6 +66,14 @@
       <!-- Contenu principal -->
       <div class="vendor-content">
         
+        <!-- Section Commandes -->
+        <div class="client-section" style="margin-bottom: 32px;">
+          <h2 class="section-title">Gestion des commandes</h2>
+          <div id="ordersList">
+            <p style="color: var(--color-text-soft);">Chargement des commandes...</p>
+          </div>
+        </div>
+
         <!-- Section Validation Vendeurs -->
         <div class="client-section" style="margin-bottom: 32px;">
           <h2 class="section-title">Nouveaux vendeurs (à valider)</h2>
@@ -101,38 +109,72 @@
     async function loadAdminDashboard() {
       const sb = await initSupabase();
       
-      // 1. Vérifier la session
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
         window.location.href = '../login.html';
         return;
       }
 
-      // 2. Vérifier que c'est bien un admin
       const { data: profile } = await sb.from('profiles').select('role, full_name').eq('id', session.user.id).single();
       
       if (!profile || profile.role !== 'admin') {
-        alert("Accès refusé. Vous n'êtes pas administrateur.");
+        alert("Accès refusé.");
         window.location.href = '../index.html';
         return;
       }
 
       document.getElementById('adminName').textContent = "Bonjour, " + profile.full_name;
 
-      // 3. Compter les produits en attente
-      const { count: pendingCount } = await sb
-        .from('products')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+      // --- 1. CHARGER LES COMMANDES ---
+      const { data: orders } = await sb
+        .from('orders')
+        .select('*, profiles ( full_name, phone ), order_items ( product_name, quantity, unit_price_fcfa )')
+        .order('created_at', { ascending: false });
+
+      const ordersList = document.getElementById('ordersList');
       
+      if (!orders || orders.length === 0) {
+        ordersList.innerHTML = '<p style="color: var(--color-text-soft);">Aucune commande pour le moment.</p>';
+      } else {
+        ordersList.innerHTML = orders.map(o => {
+          // Menu déroulant pour changer le statut
+          const statusOptions = ['new', 'confirmed', 'delivering', 'delivered', 'cancelled'].map(s => 
+            `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>`
+          ).join('');
+
+          // Lien WhatsApp
+          const phoneFormatted = (o.delivery_phone || '').replace(/[^0-9]/g, '');
+          const whatsappLink = `https://wa.me/225${phoneFormatted}`;
+
+          return `
+            <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px; box-shadow: var(--shadow-sm);">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <strong>${o.order_number}</strong>
+                <span class="badge">${o.status}</span>
+              </div>
+              <p style="font-size: 14px; margin-bottom: 4px;"><strong>Client :</strong> ${o.delivery_full_name} (${o.delivery_phone})</p>
+              <p style="font-size: 14px; margin-bottom: 4px;"><strong>Livraison :</strong> ${o.delivery_address}, ${o.delivery_commune}</p>
+              <p style="font-size: 14px; margin-bottom: 4px;"><strong>Total :</strong> ${formatPrice(o.total_fcfa)}</p>
+              
+              <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                <select onchange="changeOrderStatus('${o.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid var(--color-border);">
+                  ${statusOptions}
+                </select>
+                <a href="${whatsappLink}" target="_blank" class="btn btn--success btn--sm" style="display: flex; align-items: center; gap: 4px;">
+                  💬 WhatsApp
+                </a>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // --- 2. STATS PRODUITS ---
+      const { count: pendingCount } = await sb.from('products').select('*', { count: 'exact', head: true }).eq('status', 'pending');
       document.getElementById('statPendingProducts').textContent = pendingCount || 0;
 
-      // 4. Charger les boutiques en attente
-      const { data: pendingShops } = await sb
-        .from('shops')
-        .select('*')
-        .eq('status', 'pending');
-
+      // --- 3. BOUTIQUES EN ATTENTE ---
+      const { data: pendingShops } = await sb.from('shops').select('*').eq('status', 'pending');
       const shopsList = document.getElementById('pendingShopsList');
       if (!pendingShops || pendingShops.length === 0) {
         shopsList.innerHTML = '<p style="color: var(--color-text-soft);">Aucune boutique en attente.</p>';
@@ -151,12 +193,8 @@
         `).join('');
       }
 
-      // 5. Charger les produits en attente
-      const { data: pendingProducts } = await sb
-        .from('products')
-        .select('*, shops ( name )')
-        .eq('status', 'pending');
-
+      // --- 4. PRODUITS EN ATTENTE ---
+      const { data: pendingProducts } = await sb.from('products').select('*, shops ( name )').eq('status', 'pending');
       const productsList = document.getElementById('pendingProductsList');
       if (!pendingProducts || pendingProducts.length === 0) {
         productsList.innerHTML = '<p style="color: var(--color-text-soft);">Aucun produit en attente.</p>';
@@ -176,38 +214,30 @@
       }
     }
 
-    // Fonctions d'approbation
+    // --- FONCTIONS GLOBALES ---
+    window.changeOrderStatus = async function(orderId, newStatus) {
+      const sb = await initSupabase();
+      const { error } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
+      if (error) alert("Erreur : " + error.message);
+      else alert("Statut de la commande mis à jour !");
+    };
+
     window.approveShop = async function(shopId, btn) {
-      btn.textContent = '...';
-      btn.disabled = true;
+      btn.textContent = '...'; btn.disabled = true;
       const sb = await initSupabase();
       const { error } = await sb.from('shops').update({ status: 'approved' }).eq('id', shopId);
-      if (error) {
-        alert("Erreur : " + error.message);
-        btn.textContent = 'Approuver';
-        btn.disabled = false;
-      } else {
-        alert("Boutique approuvée !");
-        window.location.reload();
-      }
+      if (error) { alert(error.message); btn.textContent = 'Approuver'; btn.disabled = false; }
+      else { window.location.reload(); }
     };
 
     window.approveProduct = async function(prodId, btn) {
-      btn.textContent = '...';
-      btn.disabled = true;
+      btn.textContent = '...'; btn.disabled = true;
       const sb = await initSupabase();
       const { error } = await sb.from('products').update({ status: 'approved' }).eq('id', prodId);
-      if (error) {
-        alert("Erreur : " + error.message);
-        btn.textContent = 'Approuver';
-        btn.disabled = false;
-      } else {
-        alert("Produit approuvé ! Il est maintenant en ligne.");
-        window.location.reload();
-      }
+      if (error) { alert(error.message); btn.textContent = 'Approuver'; btn.disabled = false; }
+      else { window.location.reload(); }
     };
 
-    // Déconnexion
     document.getElementById('btnLogout').addEventListener('click', async (e) => {
       e.preventDefault();
       const sb = await initSupabase();
