@@ -107,6 +107,10 @@
         return;
       }
 
+      // --- TEST DE DÉBOGAGE (S'affiche avant la redirection) ---
+      alert("Rôle détecté dans la base : " + profile.role);
+      // ---------------------------------------------------------
+
       // 3. Redirection stricte
       if (profile.role === 'admin') {
         window.location.href = './admin/dashboard.html';
