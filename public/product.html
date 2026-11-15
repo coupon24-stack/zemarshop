@@ -105,30 +105,15 @@
     <div class="container" style="max-width: 800px;">
       <h2 style="font-size: 22px; margin-bottom: 24px;">Avis clients</h2>
 
-      <!-- Formulaire d'avis -->
-      <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm); margin-bottom: 32px;">
-        <h3 style="font-size: 16px; margin-bottom: 16px;">Laisser un avis</h3>
-        <form id="reviewForm">
-          <div class="field">
-            <label class="field__label">Votre nom</label>
-            <input type="text" class="field__input" id="reviewName" placeholder="Ex: Koffi Y." required />
-          </div>
-          <div class="field" style="margin-top: 12px;">
-            <label class="field__label">Note</label>
-            <select class="field__select" id="reviewRating" required>
-              <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
-              <option value="4">⭐⭐⭐⭐ (Très bien)</option>
-              <option value="3">⭐⭐⭐ (Bien)</option>
-              <option value="2">⭐⭐ (Moyen)</option>
-              <option value="1">⭐ (Mauvais)</option>
-            </select>
-          </div>
-          <div class="field" style="margin-top: 12px;">
-            <label class="field__label">Votre commentaire</label>
-            <textarea class="field__textarea" id="reviewComment" placeholder="Qu'avez-vous pensé du produit ?" required></textarea>
-          </div>
-          <button type="submit" class="btn btn--primary" style="margin-top: 16px;" id="btnSubmitReview">Publier mon avis</button>
-        </form>
+      <!-- Formulaire d'avis BLOQUÉ -->
+      <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm); margin-bottom: 32px; text-align: center;">
+        <div style="font-size: 32px; margin-bottom: 12px;">🔒</div>
+        <h3 style="font-size: 16px; margin-bottom: 8px;">Vous avez acheté ce produit ?</h3>
+        <p style="color: var(--color-text-soft); font-size: 14px; margin-bottom: 16px;">
+          Seuls les clients ayant reçu cette commande peuvent laisser un avis. 
+          Connectez-vous pour vérifier votre éligibilité.
+        </p>
+        <a href="./login.html" class="btn btn--primary btn--sm">Se connecter pour donner un avis</a>
       </div>
 
       <!-- Liste des avis -->
@@ -205,7 +190,7 @@
       loadReviews(productId);
     }
 
-    // --- GESTION DES AVIS ---
+    // --- GESTION DE L'AFFICHAGE DES AVIS ---
     async function loadReviews(productId) {
       const { data: reviews, error } = await sb
         .from('reviews')
@@ -216,7 +201,7 @@
       const list = document.getElementById('reviewsList');
       
       if (error || !reviews || reviews.length === 0) {
-        list.innerHTML = '<p style="color: var(--color-text-soft);">Aucun avis pour le moment. Soyez le premier à donner votre avis !</p>';
+        list.innerHTML = '<p style="color: var(--color-text-soft); text-align: center;">Aucun avis pour le moment.</p>';
         return;
       }
 
@@ -235,33 +220,6 @@
       }).join('');
     }
 
-    document.getElementById('reviewForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('btnSubmitReview');
-      btn.textContent = 'Envoi...';
-      btn.disabled = true;
-
-      const newReview = {
-        product_id: product.id,
-        client_name: document.getElementById('reviewName').value,
-        rating: parseInt(document.getElementById('reviewRating').value),
-        comment: document.getElementById('reviewComment').value
-      };
-
-      const { error } = await sb.from('reviews').insert([newReview]);
-
-      if (error) {
-        alert("Erreur lors de l'envoi de l'avis.");
-        btn.textContent = 'Publier mon avis';
-        btn.disabled = false;
-      } else {
-        document.getElementById('reviewForm').reset();
-        btn.textContent = 'Publier mon avis';
-        btn.disabled = false;
-        loadReviews(product.id); // Recharger les avis
-      }
-    });
-
     // --- PARTAGE ---
     window.shareProduct = function() {
       const shareData = {
@@ -273,12 +231,11 @@
       if (navigator.share) {
         navigator.share(shareData).catch(console.error);
       } else {
-        // Fallback pour les navigateurs qui ne supportent pas l'API Web Share
         alert("Copiez ce lien pour partager : " + window.location.href);
       }
     };
 
-    // --- VARIANTES & PANIER (Inchangé) ---
+    // --- VARIANTES & PANIER ---
     let selectedColor = 'Défaut';
     let selectedSize = 'Défaut';
 
