@@ -80,7 +80,6 @@ export function renderNavbar(activePage = 'home') {
             <circle cx="18" cy="20" r="1.5"/>
             <path d="M6 6 5 3H2"/>
           </svg>
-          <!-- On ajoute une classe par défaut cachée -->
           <span class="cart-count" id="cartCount" style="display: none;">0</span>
         </a>
         <a href="${authBtnHref}" class="btn btn--ghost btn--sm navbar__hide-mobile">${authBtnText}</a>
@@ -117,23 +116,22 @@ export function renderNavbar(activePage = 'home') {
     nav.classList.toggle('is-scrolled', window.scrollY > 10);
   }, { passive: true });
 
-  // MISE À JOUR DU BADGE (Au chargement de chaque page)
+  // MISE À JOUR DU BADGE AU CHARGEMENT DE LA PAGE
   updateCartCount();
 }
 
-// Fonction globale pour mettre à jour le badge (utilisable partout)
+// Fonction globale qui lit le localStorage et affiche/cache le badge
 export function updateCartCount() {
   const el = document.getElementById('cartCount');
   if (!el) return;
 
-  // On lit le localStorage
   const count = parseInt(localStorage.getItem('zemar_cart_count') || '0', 10);
 
   if (count > 0) {
     el.textContent = count;
-    el.style.display = 'flex'; // On l'affiche
+    el.style.display = 'flex'; 
   } else {
     el.textContent = '0';
-    el.style.display = 'none'; // On le cache complètement s'il n'y a rien
+    el.style.display = 'none';
   }
 }
