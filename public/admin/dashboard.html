@@ -20,7 +20,6 @@
 
   <main class="container section">
     
-    <!-- En-tête Admin -->
     <div class="vendor-header" style="border-left: 4px solid var(--color-text);">
       <div class="vendor-info">
         <span class="badge" style="background: var(--color-text); color: white;">Administrateur</span>
@@ -30,7 +29,6 @@
       <a href="#" id="btnLogout" class="btn btn--outline btn--sm">Déconnexion</a>
     </div>
 
-    <!-- Statistiques Globales -->
     <div class="vendor-stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 32px;">
       <div class="stat-card" style="border-left-color: var(--color-text);">
         <span class="stat-label">Ventes Totales</span>
@@ -50,10 +48,8 @@
       </div>
     </div>
 
-    <!-- Menu et Actions Rapides -->
     <div class="vendor-layout">
       
-      <!-- Menu de gauche -->
       <aside class="vendor-sidebar">
         <a href="#" class="vendor-nav-link active">Vue d'ensemble</a>
         <a href="#" class="vendor-nav-link">Gestion des commandes</a>
@@ -63,10 +59,8 @@
         <a href="#" class="vendor-nav-link">Paramètres</a>
       </aside>
 
-      <!-- Contenu principal -->
       <div class="vendor-content">
         
-        <!-- Section Commandes -->
         <div class="client-section" style="margin-bottom: 32px;">
           <h2 class="section-title">Gestion des commandes</h2>
           <div id="ordersList">
@@ -74,7 +68,6 @@
           </div>
         </div>
 
-        <!-- Section Validation Vendeurs -->
         <div class="client-section" style="margin-bottom: 32px;">
           <h2 class="section-title">Nouveaux vendeurs (à valider)</h2>
           <div id="pendingShopsList">
@@ -82,7 +75,6 @@
           </div>
         </div>
 
-        <!-- Section Validation Produits -->
         <div class="client-section">
           <h2 class="section-title">Produits en attente de validation</h2>
           <div id="pendingProductsList">
@@ -106,35 +98,22 @@
     renderNavbar('admin');
     renderFooter();
 
-    // Dictionnaire des statuts (pour l'affichage)
     const statusLabels = {
-      'new': 'Nouvelle',
-      'confirmed': 'Confirmée',
-      'delivering': 'En livraison',
-      'delivered': 'Livrée',
-      'cancelled': 'Annulée'
+      'new': 'Nouvelle', 'confirmed': 'Confirmée', 'delivering': 'En livraison',
+      'delivered': 'Livrée', 'cancelled': 'Annulée'
     };
 
     async function loadAdminDashboard() {
       const sb = await initSupabase();
       
       const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        window.location.href = '../login.html';
-        return;
-      }
+      if (!session) { window.location.href = '../login.html'; return; }
 
       const { data: profile } = await sb.from('profiles').select('role, full_name').eq('id', session.user.id).single();
-      
-      if (!profile || profile.role !== 'admin') {
-        alert("Accès refusé.");
-        window.location.href = '../index.html';
-        return;
-      }
+      if (!profile || profile.role !== 'admin') { alert("Accès refusé."); window.location.href = '../index.html'; return; }
 
       document.getElementById('adminName').textContent = "Bonjour, " + profile.full_name;
 
-      // --- 1. CHARGER LES COMMANDES ---
       const { data: orders } = await sb
         .from('orders')
         .select('*, profiles ( full_name, phone ), order_items ( product_name, quantity, unit_price_fcfa )')
@@ -146,12 +125,10 @@
         ordersList.innerHTML = '<p style="color: var(--color-text-soft);">Aucune commande pour le moment.</p>';
       } else {
         ordersList.innerHTML = orders.map(o => {
-          // Menu déroulant pour changer le statut
           const statusOptions = Object.keys(statusLabels).map(s => 
             `<option value="${s}" ${o.status === s ? 'selected' : ''}>${statusLabels[s]}</option>`
           ).join('');
 
-          // Lien WhatsApp
           const phoneFormatted = (o.delivery_phone || '').replace(/[^0-9]/g, '');
           const whatsappLink = `https://wa.me/225${phoneFormatted}`;
 
@@ -165,7 +142,6 @@
               <p style="font-size: 14px; margin-bottom: 4px;"><strong>Livraison :</strong> ${o.delivery_address}, ${o.delivery_commune}</p>
               <p style="font-size: 14px; margin-bottom: 4px;"><strong>Total :</strong> ${formatPrice(o.total_fcfa)}</p>
               
-              <!-- INFOS DE PAIEMENT -->
               <div style="background: var(--color-bg-alt); padding: 8px; border-radius: 8px; margin: 8px 0; font-size: 13px;">
                 <strong>Paiement :</strong> ${o.payment_method} 
                 ${o.transaction_code ? ` (Code: <strong>${o.transaction_code}</strong>)` : ''}
@@ -185,11 +161,9 @@
         }).join('');
       }
 
-      // --- 2. STATS PRODUITS ---
       const { count: pendingCount } = await sb.from('products').select('*', { count: 'exact', head: true }).eq('status', 'pending');
       document.getElementById('statPendingProducts').textContent = pendingCount || 0;
 
-      // --- 3. BOUTIQUES EN ATTENTE ---
       const { data: pendingShops } = await sb.from('shops').select('*').eq('status', 'pending');
       const shopsList = document.getElementById('pendingShopsList');
       if (!pendingShops || pendingShops.length === 0) {
@@ -209,7 +183,6 @@
         `).join('');
       }
 
-      // --- 4. PRODUITS EN ATTENTE ---
       const { data: pendingProducts } = await sb.from('products').select('*, shops ( name )').eq('status', 'pending');
       const productsList = document.getElementById('pendingProductsList');
       if (!pendingProducts || pendingProducts.length === 0) {
@@ -230,7 +203,6 @@
       }
     }
 
-    // --- FONCTIONS GLOBALES ---
     window.changeOrderStatus = async function(orderId, newStatus) {
       const sb = await initSupabase();
       const { error } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
@@ -238,16 +210,34 @@
       else alert("Statut de la commande mis à jour !");
     };
 
+    // FONCTION MISE À JOUR POUR DÉCRÉMENTER LE STOCK
     window.validatePayment = async function(orderId, btn) {
       btn.textContent = '...'; btn.disabled = true;
       const sb = await initSupabase();
+      
+      // 1. Récupérer les articles de la commande
+      const { data: orderItems } = await sb.from('order_items').select('product_id, quantity').eq('order_id', orderId);
+
+      if (orderItems && orderItems.length > 0) {
+        // 2. Décrémenter le stock pour chaque produit
+        for (const item of orderItems) {
+          const { data: prod } = await sb.from('products').select('quantity').eq('id', item.product_id).single();
+          if (prod) {
+            const newQty = prod.quantity - item.quantity;
+            await sb.from('products').update({ quantity: newQty < 0 ? 0 : newQty }).eq('id', item.product_id);
+          }
+        }
+      }
+
+      // 3. Valider le paiement
       const { error } = await sb.from('orders').update({ payment_status: 'paid' }).eq('id', orderId);
+      
       if (error) { 
         alert(error.message); 
         btn.textContent = '✅ Valider Paiement'; 
         btn.disabled = false; 
       } else { 
-        alert("Paiement validé avec succès !"); 
+        alert("Paiement validé avec succès et stocks mis à jour !"); 
         window.location.reload(); 
       }
     };
