@@ -26,6 +26,9 @@
         <p>Content de vous revoir sur ZemarShop !</p>
       </div>
 
+      <!-- Message d'erreur global -->
+      <div id="globalError" style="display: none; background: #FEE2E2; color: #DC2626; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; text-align: center; font-weight: bold;"></div>
+
       <form id="loginForm">
         
         <div class="field">
@@ -38,17 +41,7 @@
           <input type="password" class="field__input" id="password" placeholder="••••••••" required />
         </div>
 
-        <div class="auth-actions">
-          <label class="auth-checkbox">
-            <input type="checkbox" /> Se souvenir de moi
-          </label>
-          <a href="#" class="auth-link">Mot de passe oublié ?</a>
-        </div>
-
-        <!-- Zone d'erreur -->
-        <div id="errorMsg" style="display: none; color: var(--color-danger); font-size: 14px; text-align: center; margin-bottom: 16px;"></div>
-
-        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit">
+        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit" style="margin-top: 16px;">
           Se connecter
         </button>
 
@@ -67,58 +60,54 @@
   <script type="module">
     import { renderNavbar } from './js/ui/navbar.js';
     import { renderFooter } from './js/ui/footer.js';
-    import { initSupabase } from './js/supabase-client.js';
+    import { CONFIG } from './js/config.js';
 
     renderNavbar('login');
     renderFooter();
 
-    // Connexion à Supabase
-    const sb = await initSupabase();
-
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
+    async function doLogin() {
       const btn = document.getElementById('btnSubmit');
-      const errorEl = document.getElementById('errorMsg');
+      const errorEl = document.getElementById('globalError');
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+
+      // 1. Connexion à Supabase
+      const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+      const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
       btn.textContent = 'Connexion en cours...';
       btn.disabled = true;
       errorEl.style.display = 'none';
 
-      // 1. Authentification Supabase
-      const { data, error } = await sb.auth.signInWithPassword({
+      const { data: authData, error: authError } = await sb.auth.signInWithPassword({
         email: email,
         password: password,
       });
 
-      if (error) {
-        errorEl.textContent = "Email ou mot de passe incorrect.";
+      if (authError) {
+        errorEl.textContent = "Erreur : " + authError.message;
         errorEl.style.display = 'block';
         btn.textContent = 'Se connecter';
         btn.disabled = false;
         return;
       }
 
-      // 2. Connexion réussie : on récupère le rôle
+      // 2. Récupération du profil
       const { data: profile, error: profileError } = await sb
         .from('profiles')
         .select('role')
-        .eq('id', data.user.id)
+        .eq('id', authData.user.id)
         .single();
 
       if (profileError || !profile) {
-        errorEl.textContent = "Profil introuvable. Contactez le support.";
+        errorEl.textContent = "Profil introuvable : " + (profileError ? profileError.message : "Aucun profil associé.");
         errorEl.style.display = 'block';
         btn.textContent = 'Se connecter';
         btn.disabled = false;
         return;
       }
 
-      // 3. Redirection intelligente selon le rôle
-      console.log("Rôle de l'utilisateur connecté :", profile.role);
-
+      // 3. Redirection stricte
       if (profile.role === 'admin') {
         window.location.href = './admin/dashboard.html';
       } else if (profile.role === 'vendor') {
@@ -126,6 +115,11 @@
       } else {
         window.location.href = './client/dashboard.html';
       }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      doLogin();
     });
   </script>
 </body>
