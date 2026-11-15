@@ -23,11 +23,11 @@
     <!-- En-tête de la boutique -->
     <div class="vendor-header">
       <div class="vendor-info">
-        <span class="badge badge--success">Boutique vérifiée</span>
-        <h1>Boutique Awa</h1>
+        <span class="badge badge--success" id="shopStatus">Chargement...</span>
+        <h1 id="shopName">Chargement...</h1>
         <p>Gérez vos produits et suivez vos ventes.</p>
       </div>
-      <!-- LE BOUTON EST DEVENU UN LIEN ICI -->
+      <!-- Le bouton d'ajout de produit -->
       <a href="./add-product.html" class="btn btn--primary">➕ Ajouter un produit</a>
     </div>
 
@@ -35,15 +35,15 @@
     <div class="vendor-stats-grid">
       <div class="stat-card">
         <span class="stat-label">Chiffre d'affaires</span>
-        <strong class="stat-value">150 000 FCFA</strong>
+        <strong class="stat-value">0 FCFA</strong>
       </div>
       <div class="stat-card">
         <span class="stat-label">Commission Zemar (10%)</span>
-        <strong class="stat-value" style="color: var(--color-danger);">- 15 000 FCFA</strong>
+        <strong class="stat-value" style="color: var(--color-danger);">- 0 FCFA</strong>
       </div>
       <div class="stat-card" style="background: var(--color-success-soft);">
         <span class="stat-label" style="color: var(--color-success);">Net à recevoir</span>
-        <strong class="stat-value" style="color: var(--color-success);">135 000 FCFA</strong>
+        <strong class="stat-value" style="color: var(--color-success);">0 FCFA</strong>
       </div>
     </div>
 
@@ -57,42 +57,16 @@
         <a href="#" class="vendor-nav-link">Mes ventes</a>
         <a href="#" class="vendor-nav-link">Mes revenus</a>
         <a href="#" class="vendor-nav-link">Ma boutique</a>
+        <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--color-border);">
+        <a href="#" class="vendor-nav-link" id="btnLogout" style="color: var(--color-danger);">Déconnexion</a>
       </aside>
 
       <!-- Contenu principal -->
       <div class="vendor-content">
         <h2 class="section-title">Mes derniers produits</h2>
         
-        <div class="vendor-products-list">
-          
-          <!-- Produit 1 -->
-          <div class="vendor-product-item">
-            <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=100" alt="Robe" />
-            <div class="vendor-product-info">
-              <h3>Robe africaine wax élégante</h3>
-              <p>Prix : 15 000 FCFA</p>
-              <p>Stock : 12 unités</p>
-            </div>
-            <div class="vendor-product-actions">
-              <span class="badge badge--success">En ligne</span>
-              <button class="btn btn--outline btn--sm">Modifier</button>
-            </div>
-          </div>
-
-          <!-- Produit 2 -->
-          <div class="vendor-product-item">
-            <img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=100" alt="Sneakers" />
-            <div class="vendor-product-info">
-              <h3>Sneakers blanches homme</h3>
-              <p>Prix : 22 500 FCFA</p>
-              <p>Stock : 8 unités</p>
-            </div>
-            <div class="vendor-product-actions">
-              <span class="badge badge--warning">En attente</span>
-              <button class="btn btn--outline btn--sm">Modifier</button>
-            </div>
-          </div>
-
+        <div class="vendor-products-list" id="vendorProducts">
+          <p style="color: var(--color-text-soft);">Chargement de vos produits...</p>
         </div>
       </div>
     </div>
@@ -104,9 +78,97 @@
   <script type="module">
     import { renderNavbar } from '../js/ui/navbar.js';
     import { renderFooter } from '../js/ui/footer.js';
+    import { initSupabase } from '../js/supabase-client.js';
+    import { formatPrice } from '../js/utils/format.js';
 
     renderNavbar('vendor');
     renderFooter();
+
+    async function loadVendorDashboard() {
+      const sb = await initSupabase();
+      
+      // 1. Vérifier que l'utilisateur est connecté
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      // 2. Récupérer la boutique de CE vendeur
+      const { data: shop, error: shopError } = await sb
+        .from('shops')
+        .select('*')
+        .eq('owner_id', session.user.id)
+        .single();
+
+      if (shopError || !shop) {
+        document.getElementById('shopName').textContent = "Boutique introuvable";
+        document.getElementById('shopStatus').textContent = "Erreur";
+        document.getElementById('vendorProducts').innerHTML = "<p>Vous n'avez pas encore de boutique.</p>";
+        return;
+      }
+
+      // 3. Afficher les infos de la boutique
+      document.getElementById('shopName').textContent = shop.name;
+      
+      const statusBadge = document.getElementById('shopStatus');
+      if (shop.status === 'approved') {
+        statusBadge.textContent = "Boutique vérifiée";
+        statusBadge.className = "badge badge--success";
+      } else if (shop.status === 'pending') {
+        statusBadge.textContent = "En attente de validation";
+        statusBadge.className = "badge badge--warning";
+      } else {
+        statusBadge.textContent = "Suspendue";
+        statusBadge.className = "badge badge--danger";
+      }
+
+      // 4. Récupérer les produits de CETTE boutique
+      const { data: products, error: prodError } = await sb
+        .from('products')
+        .select('*')
+        .eq('shop_id', shop.id)
+        .order('created_at', { ascending: false });
+
+      const listEl = document.getElementById('vendorProducts');
+      
+      if (prodError || !products || products.length === 0) {
+        listEl.innerHTML = "<p>Vous n'avez pas encore ajouté de produit.</p>";
+        return;
+      }
+
+      // 5. Afficher les produits
+      listEl.innerHTML = products.map(p => {
+        const statusBadge = p.status === 'approved' 
+          ? '<span class="badge badge--success">En ligne</span>' 
+          : '<span class="badge badge--warning">En attente</span>';
+
+        return `
+          <div class="vendor-product-item">
+            <img src="${p.image_url || 'https://via.placeholder.com/100'}" alt="${p.name}" />
+            <div class="vendor-product-info">
+              <h3>${p.name}</h3>
+              <p>Prix : ${formatPrice(p.price_fcfa)}</p>
+              <p>Stock : ${p.quantity} unités</p>
+            </div>
+            <div class="vendor-product-actions">
+              ${statusBadge}
+              <button class="btn btn--outline btn--sm">Modifier</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Déconnexion
+    document.getElementById('btnLogout').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const sb = await initSupabase();
+      await sb.auth.signOut();
+      window.location.href = '../index.html';
+    });
+
+    loadVendorDashboard();
   </script>
 </body>
 </html>
