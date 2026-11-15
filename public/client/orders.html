@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mes Commandes — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/pages/home.css" />
+  <link rel="stylesheet" href="../css/pages/client.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="container section">
+    <div class="client-layout">
+      
+      <!-- Menu de gauche (identique) -->
+      <aside class="client-sidebar">
+        <a href="./dashboard.html" class="client-nav-link">Tableau de bord</a>
+        <a href="./orders.html" class="client-nav-link active">Mes commandes</a>
+        <a href="./favorites.html" class="client-nav-link">Mes favoris</a>
+        <a href="./addresses.html" class="client-nav-link">Mes adresses</a>
+        <a href="./profile.html" class="client-nav-link">Mon profil</a>
+        <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--color-border);">
+        <a href="#" class="client-nav-link" id="btnLogout" style="color: var(--color-danger);">Déconnexion</a>
+      </aside>
+
+      <!-- Contenu principal -->
+      <div class="client-content">
+        <h2 class="section-title" style="margin-bottom: 24px;">Mes Commandes</h2>
+        
+        <div id="ordersList">
+          <p style="color: var(--color-text-soft);">Chargement de vos commandes...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from '../js/ui/navbar.js';
+    import { renderFooter } from '../js/ui/footer.js';
+    import { initSupabase } from '../js/supabase-client.js';
+    import { formatPrice } from '../js/utils/format.js';
+
+    renderNavbar('client');
+    renderFooter();
+
+    const statusLabels = {
+      'new': { text: 'Nouvelle', color: 'badge--warning' },
+      'confirmed': { text: 'Confirmée', color: 'badge--info' },
+      'delivering': { text: 'En livraison', color: 'badge--warning' },
+      'delivered': { text: 'Livrée', color: 'badge--success' },
+      'cancelled': { text: 'Annulée', color: 'badge--danger' }
+    };
+
+    async function loadOrders() {
+      const sb = await initSupabase();
+      
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      const { data: orders, error } = await sb
+        .from('orders')
+        .select('*, order_items ( product_name, quantity, unit_price_fcfa )')
+        .eq('client_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      const listEl = document.getElementById('ordersList');
+      
+      if (error || !orders || orders.length === 0) {
+        listEl.innerHTML = '<p style="color: var(--color-text-soft);">Vous n\'avez pas encore passé de commande.</p>';
+        return;
+      }
+
+      listEl.innerHTML = orders.map(o => {
+        const status = statusLabels[o.status] || { text: o.status, color: '' };
+        const itemsHtml = o.order_items.map(item => `
+          <div style="font-size: 13px; color: var(--color-text-soft); margin-bottom: 2px;">
+            ${item.quantity} x ${item.product_name} — ${formatPrice(item.unit_price_fcfa)}
+          </div>
+        `).join('');
+
+        return `
+          <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px; box-shadow: var(--shadow-sm); border-left: 4px solid var(--color-primary);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <strong>Commande ${o.order_number}</strong>
+              <span class="badge ${status.color}">${status.text}</span>
+            </div>
+            <div style="margin-bottom: 12px;">${itemsHtml}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--color-border); padding-top: 12px;">
+              <span style="font-size: 14px;">Total :</span>
+              <strong style="color: var(--color-primary);">${formatPrice(o.total_fcfa)}</strong>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('btnLogout').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const sb = await initSupabase();
+      await sb.auth.signOut();
+      window.location.href = '../index.html';
+    });
+
+    loadOrders();
+  </script>
+</body>
+</html>
