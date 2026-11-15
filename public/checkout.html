@@ -27,6 +27,11 @@
       <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm);">
         <h2 style="margin-bottom: 16px; font-size: 18px;">Informations de livraison</h2>
         
+        <!-- Petit message pour indiquer que l'adresse a été pré-remplie -->
+        <div id="autofillMsg" style="display: none; background: var(--color-success-soft); color: var(--color-success); padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; font-weight: 600;">
+          ✅ Informations pré-remplies avec votre adresse par défaut.
+        </div>
+
         <form id="checkoutForm">
           <div class="field">
             <label class="field__label">Nom complet</label>
@@ -56,36 +61,29 @@
           <h2 style="margin-top: 24px; margin-bottom: 16px; font-size: 18px;">Mode de paiement</h2>
 
           <div style="display: flex; flex-direction: column; gap: 8px;">
-            <!-- Option Cash -->
             <label style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer;">
               <input type="radio" name="payment" value="cash_on_delivery" checked onchange="toggleTransactionCode()" />
               <span>💵 Paiement à la livraison</span>
             </label>
 
-            <!-- Option Orange Money -->
             <label style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer;">
               <input type="radio" name="payment" value="orange_money" onchange="toggleTransactionCode()" />
               <span>🟠 Orange Money</span>
             </label>
 
-            <!-- Option MTN -->
             <label style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer;">
               <input type="radio" name="payment" value="mtn_money" onchange="toggleTransactionCode()" />
               <span>🟡 MTN Mobile Money</span>
             </label>
 
-            <!-- Option Wave -->
             <label style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer;">
               <input type="radio" name="payment" value="wave" onchange="toggleTransactionCode()" />
               <span>🌊 Wave</span>
             </label>
           </div>
 
-          <!-- Zone de paiement Mobile Money (cachée par défaut) -->
           <div id="mobileMoneyInstructions" style="display: none; background: var(--color-primary-light); padding: 16px; border-radius: 8px; margin-top: 16px;">
-            <p style="font-size: 14px; font-weight: 600; color: var(--color-primary); margin-bottom: 8px;">
-              Instructions de paiement :
-            </p>
+            <p style="font-size: 14px; font-weight: 600; color: var(--color-primary); margin-bottom: 8px;">Instructions de paiement :</p>
             <p style="font-size: 13px; margin-bottom: 12px;">
               Veuillez envoyer <strong id="amountToPay">0 FCFA</strong> au numéro <strong>07 00 00 00 00 00</strong> (ZemarShop), puis entrez le code de la transaction ci-dessous.
             </p>
@@ -149,7 +147,27 @@
       window.location.href = './login.html';
     }
 
-    // 2. Charger le panier
+    // 2. Pré-remplir avec l'adresse par défaut (NOUVEAU)
+    async function autofillAddress() {
+      const { data: defaultAddr } = await sb
+        .from('addresses')
+        .select('*')
+        .eq('client_id', session.user.id)
+        .eq('is_default', true)
+        .maybeSingle(); // maybeSingle pour éviter l'erreur si pas d'adresse
+
+      if (defaultAddr) {
+        document.getElementById('deliveryName').value = defaultAddr.full_name;
+        document.getElementById('deliveryPhone').value = defaultAddr.phone;
+        document.getElementById('deliveryCity').value = defaultAddr.city;
+        document.getElementById('deliveryCommune').value = defaultAddr.commune;
+        document.getElementById('deliveryAddress').value = defaultAddr.address;
+        document.getElementById('autofillMsg').style.display = 'block';
+      }
+    }
+    autofillAddress();
+
+    // 3. Charger le panier
     try {
       const saved = localStorage.getItem('zemar_cart');
       if (saved) cart = JSON.parse(saved);
@@ -159,7 +177,7 @@
       window.location.href = './cart.html';
     }
 
-    // 3. Afficher le récapitulatif
+    // 4. Afficher le récapitulatif
     const itemsEl = document.getElementById('checkoutItems');
     let subtotal = 0;
 
@@ -179,19 +197,15 @@
     document.getElementById('checkoutTotal').textContent = formatPrice(totalToPay);
     document.getElementById('amountToPay').textContent = formatPrice(totalToPay);
 
-    // 4. Gérer l'affichage du code de transaction
+    // 5. Gérer l'affichage du code de transaction
     window.toggleTransactionCode = function() {
       const selectedPayment = document.querySelector('input[name="payment"]:checked').value;
       const mobileMoneyZone = document.getElementById('mobileMoneyInstructions');
-      
-      if (selectedPayment === 'cash_on_delivery') {
-        mobileMoneyZone.style.display = 'none';
-      } else {
-        mobileMoneyZone.style.display = 'block';
-      }
+      if (selectedPayment === 'cash_on_delivery') mobileMoneyZone.style.display = 'none';
+      else mobileMoneyZone.style.display = 'block';
     };
 
-    // 5. Enregistrer la commande
+    // 6. Enregistrer la commande
     document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -204,7 +218,6 @@
         const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
         const transactionCode = document.getElementById('transactionCode').value || null;
 
-        // A. Insérer la commande principale
         const { data: order, error: orderError } = await sb.from('orders').insert([{
           order_number: orderNumber,
           client_id: session.user.id,
@@ -217,21 +230,16 @@
           status: 'new',
           payment_method: paymentMethod,
           transaction_code: transactionCode,
-          payment_status: paymentMethod === 'cash_on_delivery' ? 'pending' : 'pending' // Dans les 2 cas on attend la validation admin
+          payment_status: 'pending'
         }]).select().single();
 
         if (orderError) throw orderError;
 
-        // B. Récupérer les shop_id
         const productIds = cart.map(item => item.id);
         const { data: productsData } = await sb.from('products').select('id, shop_id').in('id', productIds);
-        
         const productShopMap = {};
-        if (productsData) {
-          productsData.forEach(p => productShopMap[p.id] = p.shop_id);
-        }
+        if (productsData) productsData.forEach(p => productShopMap[p.id] = p.shop_id);
 
-        // C. Insérer les lignes de commande
         const orderItemsData = cart.map(item => ({
           order_id: order.id,
           product_id: item.id,
@@ -245,11 +253,9 @@
         const { error: itemsError } = await sb.from('order_items').insert(orderItemsData);
         if (itemsError) throw itemsError;
 
-        // D. Vider le panier
         localStorage.removeItem('zemar_cart');
         localStorage.removeItem('zemar_cart_count');
 
-        // E. Rediriger
         window.location.href = `./order-success.html?num=${orderNumber}`;
 
       } catch (error) {
@@ -261,4 +267,4 @@
     });
   </script>
 </body>
-</html>
+                </html>
