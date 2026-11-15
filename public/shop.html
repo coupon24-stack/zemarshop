@@ -89,14 +89,14 @@
     const filtersScroll = document.getElementById('filtersScroll');
 
     let allProducts = [];
-    let userFavorites = []; // Pour stocker les IDs des produits favoris
+    let userFavorites = []; 
     let currentCategory = 'all';
 
     async function loadShop() {
       const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
       const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-      // 1. Vérifier si l'utilisateur est connecté et charger ses favoris
+      // 1. Vérifier la session et charger les favoris
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         const { data: favs } = await sb.from('favorites').select('product_id').eq('client_id', session.user.id);
@@ -165,23 +165,23 @@
         const oldPrice = p.old_price_fcfa ? `<span class="product-card__old-price">${formatPrice(p.old_price_fcfa)}</span>` : '';
         const img = p.image_url || 'https://via.placeholder.com/150';
         
-        // Vérifier si le produit est déjà en favori
         const isFav = userFavorites.includes(p.id);
         const favClass = isFav ? 'is-active' : '';
 
         return `
           <article class="product-card">
+            <!-- ZONE CLIQUABLE POUR LA REDIRECTION -->
             <div class="product-card__image-wrap" onclick="window.location.href='./product.html?id=${p.id}'" style="cursor: pointer;">
               <img class="product-card__image" src="${img}" alt="${p.name}" loading="lazy" />
               <div class="product-card__badges">${badge}</div>
+              
+              <!-- LE BOUTON FAVORI EST MAINTENANT DANS LA ZONE D'IMAGE -->
+              <button class="product-card__favorite ${favClass}" onclick="event.stopPropagation(); window.toggleFavorite('${p.id}', this)" aria-label="Favori">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </button>
             </div>
-            
-            <!-- Bouton Favori connecté -->
-            <button class="product-card__favorite ${favClass}" onclick="event.stopPropagation(); window.toggleFavorite('${p.id}', this)" aria-label="Favori">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-            </button>
 
             <div class="product-card__body">
               <div class="product-card__shop">${p.shops?.name || 'Boutique'}</div>
@@ -216,7 +216,6 @@
 
     // --- FONCTIONS GLOBALES ---
     
-    // Ajout rapide au panier
     window.addToCartQuick = function(id, name, price, image, shop) {
       let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
       const uniqueId = `${id}-Défaut-Défaut`;
@@ -252,7 +251,6 @@
       }, 3000);
     };
 
-    // Gestion des favoris
     window.toggleFavorite = async function(productId, btnElement) {
       const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
       const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
@@ -265,7 +263,6 @@
         return;
       }
 
-      // Vérifier si le produit est déjà en favori
       const { data: existing } = await sb
         .from('favorites')
         .select('*')
