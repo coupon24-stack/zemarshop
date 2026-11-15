@@ -56,10 +56,43 @@
           <h2 style="margin-top: 24px; margin-bottom: 16px; font-size: 18px;">Mode de paiement</h2>
 
           <div style="display: flex; flex-direction: column; gap: 8px;">
-            <label style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--color-primary); border-radius: 8px; background: var(--color-primary-light); cursor: pointer;">
-              <input type="radio" name="payment" value="cash_on_delivery" checked />
+            <!-- Option Cash -->
+            <label style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="payment" value="cash_on_delivery" checked onchange="toggleTransactionCode()" />
               <span>💵 Paiement à la livraison</span>
             </label>
+
+            <!-- Option Orange Money -->
+            <label style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="payment" value="orange_money" onchange="toggleTransactionCode()" />
+              <span>🟠 Orange Money</span>
+            </label>
+
+            <!-- Option MTN -->
+            <label style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="payment" value="mtn_money" onchange="toggleTransactionCode()" />
+              <span>🟡 MTN Mobile Money</span>
+            </label>
+
+            <!-- Option Wave -->
+            <label style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="payment" value="wave" onchange="toggleTransactionCode()" />
+              <span>🌊 Wave</span>
+            </label>
+          </div>
+
+          <!-- Zone de paiement Mobile Money (cachée par défaut) -->
+          <div id="mobileMoneyInstructions" style="display: none; background: var(--color-primary-light); padding: 16px; border-radius: 8px; margin-top: 16px;">
+            <p style="font-size: 14px; font-weight: 600; color: var(--color-primary); margin-bottom: 8px;">
+              Instructions de paiement :
+            </p>
+            <p style="font-size: 13px; margin-bottom: 12px;">
+              Veuillez envoyer <strong id="amountToPay">0 FCFA</strong> au numéro <strong>07 00 00 00 00 00</strong> (ZemarShop), puis entrez le code de la transaction ci-dessous.
+            </p>
+            <div class="field">
+              <label class="field__label">Code de transaction</label>
+              <input type="text" class="field__input" id="transactionCode" placeholder="Ex: MP123456789" />
+            </div>
           </div>
         </form>
       </div>
@@ -107,6 +140,7 @@
     const sb = await initSupabase();
     const DELIVERY_FEE = 1500;
     let cart = [];
+    let totalToPay = 0;
 
     // 1. Vérifier la connexion
     const { data: { session } } = await sb.auth.getSession();
@@ -139,12 +173,25 @@
       `;
     }).join('');
 
-    const total = subtotal + DELIVERY_FEE;
+    totalToPay = subtotal + DELIVERY_FEE;
     document.getElementById('checkoutSubtotal').textContent = formatPrice(subtotal);
     document.getElementById('checkoutDelivery').textContent = formatPrice(DELIVERY_FEE);
-    document.getElementById('checkoutTotal').textContent = formatPrice(total);
+    document.getElementById('checkoutTotal').textContent = formatPrice(totalToPay);
+    document.getElementById('amountToPay').textContent = formatPrice(totalToPay);
 
-    // 4. Enregistrer la commande dans Supabase
+    // 4. Gérer l'affichage du code de transaction
+    window.toggleTransactionCode = function() {
+      const selectedPayment = document.querySelector('input[name="payment"]:checked').value;
+      const mobileMoneyZone = document.getElementById('mobileMoneyInstructions');
+      
+      if (selectedPayment === 'cash_on_delivery') {
+        mobileMoneyZone.style.display = 'none';
+      } else {
+        mobileMoneyZone.style.display = 'block';
+      }
+    };
+
+    // 5. Enregistrer la commande
     document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -153,8 +200,9 @@
       btn.disabled = true;
 
       try {
-        // On génère un numéro de commande unique
         const orderNumber = 'ZM-' + Date.now().toString().slice(-6);
+        const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+        const transactionCode = document.getElementById('transactionCode').value || null;
 
         // A. Insérer la commande principale
         const { data: order, error: orderError } = await sb.from('orders').insert([{
@@ -165,13 +213,16 @@
           delivery_city: document.getElementById('deliveryCity').value,
           delivery_commune: document.getElementById('deliveryCommune').value,
           delivery_address: document.getElementById('deliveryAddress').value,
-          total_fcfa: total,
-          status: 'new'
+          total_fcfa: totalToPay,
+          status: 'new',
+          payment_method: paymentMethod,
+          transaction_code: transactionCode,
+          payment_status: paymentMethod === 'cash_on_delivery' ? 'pending' : 'pending' // Dans les 2 cas on attend la validation admin
         }]).select().single();
 
         if (orderError) throw orderError;
 
-        // B. Récupérer les shop_id des produits achetés
+        // B. Récupérer les shop_id
         const productIds = cart.map(item => item.id);
         const { data: productsData } = await sb.from('products').select('id, shop_id').in('id', productIds);
         
@@ -187,8 +238,8 @@
           product_name: item.name,
           unit_price_fcfa: item.price,
           quantity: item.quantity,
-          commission_fcfa: item.price * 0.10, // Commission de 10%
-          shop_id: productShopMap[item.id] || null // Lien avec la boutique
+          commission_fcfa: item.price * 0.10,
+          shop_id: productShopMap[item.id] || null
         }));
 
         const { error: itemsError } = await sb.from('order_items').insert(orderItemsData);
@@ -198,7 +249,7 @@
         localStorage.removeItem('zemar_cart');
         localStorage.removeItem('zemar_cart_count');
 
-        // E. Rediriger vers la page de succès
+        // E. Rediriger
         window.location.href = `./order-success.html?num=${orderNumber}`;
 
       } catch (error) {
