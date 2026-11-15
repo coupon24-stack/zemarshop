@@ -153,7 +153,7 @@
       btn.disabled = true;
 
       try {
-        // On génère un numéro de commande unique (ex: ZM-1715000000000)
+        // On génère un numéro de commande unique
         const orderNumber = 'ZM-' + Date.now().toString().slice(-6);
 
         // A. Insérer la commande principale
@@ -171,24 +171,34 @@
 
         if (orderError) throw orderError;
 
-        // B. Insérer les lignes de commande (order_items)
+        // B. Récupérer les shop_id des produits achetés
+        const productIds = cart.map(item => item.id);
+        const { data: productsData } = await sb.from('products').select('id, shop_id').in('id', productIds);
+        
+        const productShopMap = {};
+        if (productsData) {
+          productsData.forEach(p => productShopMap[p.id] = p.shop_id);
+        }
+
+        // C. Insérer les lignes de commande
         const orderItemsData = cart.map(item => ({
           order_id: order.id,
           product_id: item.id,
           product_name: item.name,
           unit_price_fcfa: item.price,
           quantity: item.quantity,
-          commission_fcfa: item.price * 0.10 // Calcul de la commission de 10%
+          commission_fcfa: item.price * 0.10, // Commission de 10%
+          shop_id: productShopMap[item.id] || null // Lien avec la boutique
         }));
 
         const { error: itemsError } = await sb.from('order_items').insert(orderItemsData);
         if (itemsError) throw itemsError;
 
-        // C. Vider le panier
+        // D. Vider le panier
         localStorage.removeItem('zemar_cart');
         localStorage.removeItem('zemar_cart_count');
 
-        // D. Rediriger vers la page de succès
+        // E. Rediriger vers la page de succès
         window.location.href = `./order-success.html?num=${orderNumber}`;
 
       } catch (error) {
