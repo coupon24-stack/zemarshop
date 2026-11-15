@@ -39,8 +39,7 @@
         <div class="field" style="margin-top: 16px;">
           <label class="field__label">Catégorie</label>
           <select class="field__select" id="productCategory" required>
-            <option value="">Sélectionnez une catégorie</option>
-            <!-- Les catégories seront chargées par JS -->
+            <option value="">Chargement des catégories...</option>
           </select>
         </div>
 
@@ -60,23 +59,16 @@
           <input type="number" class="field__input" id="productQuantity" placeholder="Ex: 10" required min="1" />
         </div>
 
+        <!-- LE CHAMP IMAGE EST DEVENU UN INPUT DE TYPE FILE -->
         <div class="field" style="margin-top: 16px;">
-          <label class="field__label">Lien de l'image (URL)</label>
-          <input type="url" class="field__input" id="productImage" placeholder="https://exemple.com/image.jpg" required />
-          <small style="color: var(--color-text-muted); font-size: 12px; margin-top: 4px;">Pour l'instant, collez un lien depuis Unsplash ou un autre site.</small>
+          <label class="field__label">Photo du produit</label>
+          <input type="file" class="field__input" id="productImageFile" accept="image/*" required style="padding: 8px;" />
+          <small style="color: var(--color-text-muted); font-size: 12px; margin-top: 4px;">Choisissez une photo depuis votre galerie.</small>
         </div>
 
         <div class="field" style="margin-top: 16px;">
           <label class="field__label">Description du produit</label>
           <textarea class="field__textarea" id="productDescription" placeholder="Décrivez votre produit en détail..." required></textarea>
-        </div>
-
-        <div class="alert alert--info" style="margin-top: 24px;">
-          <span>ℹ️</span>
-          <div>
-            <strong>Validation requise</strong><br>
-            Votre produit sera examiné par un administrateur avant d'être mis en ligne.
-          </div>
         </div>
 
         <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit" style="margin-top: 24px;">
@@ -98,9 +90,7 @@
     renderNavbar('vendor');
     renderFooter();
 
-    // ID de la boutique de test qu'on a créée en SQL
     const TEST_SHOP_ID = '00000000-0000-0000-0000-000000000002';
-
     let supabase;
 
     async function init() {
@@ -110,9 +100,10 @@
         return;
       }
 
-      // Charger les catégories dans le menu déroulant
-      const { data: categories } = await supabase.from('categories').select('*').order('name');
+      // Charger les catégories
+      const { data: categories, error } = await supabase.from('categories').select('*').order('name');
       const select = document.getElementById('productCategory');
+      select.innerHTML = '<option value="">Sélectionnez une catégorie</option>';
       
       if (categories) {
         categories.forEach(cat => {
@@ -121,43 +112,68 @@
           option.textContent = cat.name;
           select.appendChild(option);
         });
+      } else {
+        console.error(error);
       }
     }
 
-    // Gestion de la soumission du formulaire
     document.getElementById('addProductForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('btnSubmit');
+      const fileInput = document.getElementById('productImageFile');
       
       btn.textContent = 'Publication en cours...';
       btn.disabled = true;
 
-      // Récupération des valeurs
-      const newProduct = {
-        shop_id: TEST_SHOP_ID,
-        category_id: document.getElementById('productCategory').value,
-        name: document.getElementById('productName').value,
-        price_fcfa: parseFloat(document.getElementById('productPrice').value),
-        old_price_fcfa: document.getElementById('productOldPrice').value ? parseFloat(document.getElementById('productOldPrice').value) : null,
-        quantity: parseInt(document.getElementById('productQuantity').value, 10),
-        image_url: document.getElementById('productImage').value,
-        description: document.getElementById('productDescription').value,
-        status: 'approved' // On met 'approved' pour que le produit s'affiche tout de suite (en attendant l'espace admin)
-      };
+      try {
+        let imageUrl = null;
 
-      // Enregistrement dans Supabase
-      const { error } = await supabase
-        .from('products')
-        .insert([newProduct]);
+        // 1. Upload de l'image si un fichier est sélectionné
+        if (fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}.${fileExt}`; // Nom unique basé sur le temps
 
-      if (error) {
+          // Envoi du fichier vers le bucket 'product-images'
+          const { error: uploadError } = await supabase.storage
+            .from('product-images')
+            .upload(fileName, file);
+
+          if (uploadError) throw uploadError;
+
+          // Récupération du lien public de l'image
+          const { data: urlData } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(fileName);
+          
+          imageUrl = urlData.publicUrl;
+        }
+
+        // 2. Préparation des données du produit
+        const newProduct = {
+          shop_id: TEST_SHOP_ID,
+          category_id: document.getElementById('productCategory').value,
+          name: document.getElementById('productName').value,
+          price_fcfa: parseFloat(document.getElementById('productPrice').value),
+          old_price_fcfa: document.getElementById('productOldPrice').value ? parseFloat(document.getElementById('productOldPrice').value) : null,
+          quantity: parseInt(document.getElementById('productQuantity').value, 10),
+          image_url: imageUrl,
+          description: document.getElementById('productDescription').value,
+          status: 'approved'
+        };
+
+        // 3. Insertion dans la base de données
+        const { error: insertError } = await supabase.from('products').insert([newProduct]);
+        if (insertError) throw insertError;
+
+        alert("Produit ajouté avec succès !");
+        window.location.href = './dashboard.html';
+
+      } catch (error) {
         console.error(error);
-        alert("Erreur lors de l'ajout du produit : " + error.message);
+        alert("Erreur : " + error.message);
         btn.textContent = 'Publier le produit';
         btn.disabled = false;
-      } else {
-        alert("Produit ajouté avec succès ! Vous pouvez le voir sur la boutique.");
-        window.location.href = './dashboard.html';
       }
     });
 
