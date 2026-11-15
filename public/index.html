@@ -16,7 +16,7 @@
 </head>
 <body>
 
-  <!-- Le petit message de confirmation (Toast) -->
+  <!-- Toast -->
   <div id="toast" style="visibility: hidden; min-width: 250px; background-color: #16A34A; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: visibility 0s, opacity 0.5s linear; opacity: 0;">
     ✓ Produit ajouté au panier !
   </div>
@@ -175,7 +175,7 @@
       `).join('');
     }
 
-    // 3. AFFICHAGE DES PRODUITS
+    // 3. AFFICHAGE DES PRODUITS (Zones cliquables séparées)
     function createProductCard(product) {
       const img = primaryImage(product);
       const discount = discountPercent(product.price_fcfa, product.old_price_fcfa);
@@ -184,8 +184,9 @@
       const shopName = product.shops?.name || 'Boutique Zemar';
 
       return `
-        <article class="product-card" onclick="window.location.href='./product.html?id=${product.id}'" style="cursor: pointer;">
-          <div class="product-card__image-wrap">
+        <article class="product-card">
+          <!-- Image cliquable -->
+          <div class="product-card__image-wrap" onclick="window.location.href='./product.html?id=${product.id}'" style="cursor: pointer;">
             <img class="product-card__image" src="${img}" alt="${product.name}" loading="lazy" />
             <div class="product-card__badges">${discountBadge}</div>
             <button class="product-card__favorite" aria-label="Favori">
@@ -196,14 +197,15 @@
           </div>
           <div class="product-card__body">
             <div class="product-card__shop">${shopName}</div>
-            <h3 class="product-card__name">${product.name}</h3>
+            <!-- Titre cliquable -->
+            <h3 class="product-card__name" onclick="window.location.href='./product.html?id=${product.id}'" style="cursor: pointer;">${product.name}</h3>
             <div class="product-card__prices">
               <span class="product-card__price">${formatPrice(product.price_fcfa)}</span>
               ${oldPriceHtml}
             </div>
             <div class="product-card__actions">
-              <!-- BOUTON AJOUTER DIRECT -->
-              <button class="btn btn--primary" onclick="event.stopPropagation(); window.addToCartQuick('${product.id}', '${product.name}', ${product.price_fcfa}, '${img}', '${shopName}')">Ajouter</button>
+              <!-- Bouton isolé -->
+              <button class="btn btn--primary" onclick="window.addToCartQuick('${product.id}', '${product.name}', ${product.price_fcfa}, '${img}', '${shopName}')">Ajouter</button>
             </div>
           </div>
         </article>
