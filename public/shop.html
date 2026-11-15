@@ -32,7 +32,7 @@
           <svg class="search-form__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
           </svg>
-          <input type="search" id="searchInput" placeholder="Rechercher..." />
+          <input type="search" id="searchInput" placeholder="Rechercher un produit..." />
         </div>
         <button type="submit" class="btn btn--primary">Rechercher</button>
       </form>
@@ -50,15 +50,17 @@
 
   <section class="shop-filters">
     <div class="container">
-      <div class="filters-scroll" id="filtersScroll"></div>
+      <div class="filters-scroll" id="filtersScroll">
+        <button class="filter-pill is-active" data-id="all">Tout voir</button>
+      </div>
     </div>
   </section>
 
   <section class="shop-products section">
     <div class="container">
       <div class="products-grid" id="shopGrid"></div>
-      <div id="noResults" class="hidden" style="text-align:center; padding: 40px; color: var(--color-text-soft);">
-        Aucun produit trouvé pour votre recherche.
+      <div id="noResults" class="hidden" style="text-align:center; padding: 40px; color: var(--color-text-soft); font-weight: 600;">
+        Aucun produit trouvé.
       </div>
     </div>
   </section>
@@ -68,40 +70,67 @@
   <script type="module">
     import { renderNavbar } from './js/ui/navbar.js';
     import { renderFooter } from './js/ui/footer.js';
+    import { initSupabase, getCategories } from './js/supabase-client.js';
     import { formatPrice, discountPercent, primaryImage } from './js/utils/format.js';
 
     renderNavbar('shop');
     renderFooter();
 
-    // --- BASE DE DONNÉES INTÉGRÉE ---
-    const productsDB = [
-      { id: 'p1', name: 'Robe africaine wax élégante', price_fcfa: 15000, old_price_fcfa: 20000, shops: { name: 'Boutique Awa' }, image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600' },
-      { id: 'p2', name: 'Sneakers blanches homme', price_fcfa: 22500, old_price_fcfa: null, shops: { name: 'Kicks CI' }, image_url: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600' },
-      { id: 'p3', name: 'Sac à main cuir premium', price_fcfa: 18000, old_price_fcfa: 24000, shops: { name: 'Élégance Shop' }, image_url: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600' },
-      { id: 'p4', name: 'Casque Bluetooth sans fil', price_fcfa: 12500, old_price_fcfa: 15000, shops: { name: 'TechZone' }, image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600' },
-      { id: 'p5', name: 'Montre connectée sport', price_fcfa: 32000, old_price_fcfa: null, shops: { name: 'Gadget CI' }, image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600' },
-      { id: 'p6', name: 'Parfum femme délicat', price_fcfa: 9500, old_price_fcfa: 13000, shops: { name: 'Beauty Store' }, image_url: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600' },
-      { id: 'p7', name: 'Smartphone Android 128Go', price_fcfa: 85000, old_price_fcfa: 95000, shops: { name: 'Phone City' }, image_url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600' },
-      { id: 'p8', name: 'Lampe déco design moderne', price_fcfa: 7500, old_price_fcfa: null, shops: { name: 'Maison & Co' }, image_url: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600' }
-    ];
-
-    // --- LOGIQUE DES FILTRES ---
+    let allProducts = [];
     let currentSearch = '';
-    let currentCategory = 'all';
     let currentSort = 'new';
+    let currentCategory = 'all';
 
     const shopGrid = document.getElementById('shopGrid');
     const noResults = document.getElementById('noResults');
     const searchInput = document.getElementById('searchInput');
     const sortSelect = document.getElementById('sortSelect');
+    const filtersScroll = document.getElementById('filtersScroll');
 
-    // --- AFFICHAGE ---
+    async function init() {
+      const sb = await initSupabase();
+      
+      // Charger les produits
+      const { data, error } = await sb
+        .from('products')
+        .select(`id, name, price_fcfa, old_price_fcfa, image_url, category_id, shops ( name )`)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) allProducts = data;
+
+      // Charger les catégories dans les filtres
+      const categories = await getCategories();
+      if (categories) {
+        categories.forEach(cat => {
+          const btn = document.createElement('button');
+          btn.className = 'filter-pill';
+          btn.textContent = cat.name;
+          btn.dataset.id = cat.id;
+          filtersScroll.appendChild(btn);
+        });
+      }
+
+      // Lire l'URL (recherche ou catégorie)
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('q')) {
+        currentSearch = params.get('q');
+        searchInput.value = currentSearch;
+      }
+
+      renderGrid();
+    }
+
     function renderGrid() {
-      let filtered = productsDB.filter(p => {
+      let filtered = allProducts.filter(p => {
+        // Filtre recherche
         if (currentSearch && !p.name.toLowerCase().includes(currentSearch.toLowerCase())) return false;
+        // Filtre catégorie
+        if (currentCategory !== 'all' && p.category_id !== currentCategory) return false;
         return true;
       });
 
+      // Tri
       if (currentSort === 'price_asc') filtered.sort((a,b) => a.price_fcfa - b.price_fcfa);
       if (currentSort === 'price_desc') filtered.sort((a,b) => b.price_fcfa - a.price_fcfa);
 
@@ -114,15 +143,16 @@
           const discount = discountPercent(p.price_fcfa, p.old_price_fcfa);
           const badge = discount ? `<span class="badge badge--discount">-${discount}%</span>` : '';
           const oldPrice = p.old_price_fcfa ? `<span class="product-card__old-price">${formatPrice(p.old_price_fcfa)}</span>` : '';
+          const img = primaryImage(p);
           
           return `
             <article class="product-card" onclick="window.location.href='./product.html?id=${p.id}'" style="cursor: pointer;">
               <div class="product-card__image-wrap">
-                <img class="product-card__image" src="${p.image_url}" alt="${p.name}" loading="lazy" />
+                <img class="product-card__image" src="${img}" alt="${p.name}" loading="lazy" />
                 <div class="product-card__badges">${badge}</div>
               </div>
               <div class="product-card__body">
-                <div class="product-card__shop">${p.shops.name}</div>
+                <div class="product-card__shop">${p.shops?.name || 'Boutique'}</div>
                 <h3 class="product-card__name">${p.name}</h3>
                 <div class="product-card__prices">
                   <span class="product-card__price">${formatPrice(p.price_fcfa)}</span>
@@ -135,27 +165,20 @@
       }
     }
 
-    // --- ÉVÉNEMENTS ---
-    searchInput.addEventListener('input', (e) => {
-      currentSearch = e.target.value;
-      renderGrid();
+    // Événements
+    searchInput.addEventListener('input', (e) => { currentSearch = e.target.value; renderGrid(); });
+    sortSelect.addEventListener('change', (e) => { currentSort = e.target.value; renderGrid(); });
+    
+    filtersScroll.addEventListener('click', (e) => {
+      if (e.target.classList.contains('filter-pill')) {
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('is-active'));
+        e.target.classList.add('is-active');
+        currentCategory = e.target.dataset.id;
+        renderGrid();
+      }
     });
 
-    sortSelect.addEventListener('change', (e) => {
-      currentSort = e.target.value;
-      renderGrid();
-    });
-
-    // --- LECTURE URL (Recherche depuis l'accueil) ---
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('q')) {
-      currentSearch = params.get('q');
-      searchInput.value = currentSearch;
-    }
-
-    // --- PREMIER AFFICHAGE ---
-    renderGrid();
-
+    init();
   </script>
 </body>
 </html>
