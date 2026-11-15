@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mes Favoris — ZemarShop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/pages/home.css" />
+  <link rel="stylesheet" href="../css/pages/client.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+  <header class="navbar" id="navbar"></header>
+  <main class="container section">
+    <div class="client-layout">
+      <aside class="client-sidebar">
+        <a href="./dashboard.html" class="client-nav-link">Tableau de bord</a>
+        <a href="./orders.html" class="client-nav-link">Mes commandes</a>
+        <a href="./favorites.html" class="client-nav-link active">Mes favoris</a>
+        <a href="./addresses.html" class="client-nav-link">Mes adresses</a>
+        <a href="./profile.html" class="client-nav-link">Mon profil</a>
+        <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--color-border);">
+        <a href="#" class="client-nav-link" id="btnLogout" style="color: var(--color-danger);">Déconnexion</a>
+      </aside>
+      <div class="client-content">
+        <h2 class="section-title">Mes Favoris</h2>
+        <p style="color: var(--color-text-soft);">Vous n'avez pas encore de favoris. Ajoutez des produits en cliquant sur le cœur ❤️.</p>
+      </div>
+    </div>
+  </main>
+  <footer class="footer" id="footer"></footer>
+  <script type="module">
+    import { renderNavbar } from '../js/ui/navbar.js';
+    import { renderFooter } from '../js/ui/footer.js';
+    import { initSupabase } from '../js/supabase-client.js';
+    renderNavbar('client'); renderFooter();
+    document.getElementById('btnLogout').addEventListener('click', async (e) => {
+      e.preventDefault(); const sb = await initSupabase(); await sb.auth.signOut(); window.location.href = '../index.html';
+    });
+  </script>
+</body>
+</html>
