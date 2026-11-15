@@ -28,6 +28,7 @@
     </button>
   </div>
 
+  <!-- Le contenu est masqué au départ pour éviter le flash de la robe -->
   <main class="product-detail container section" id="productContent" style="visibility: hidden; opacity: 0; transition: opacity 0.3s ease; margin-top: 0; padding-top: 16px;">
     
     <div class="product-gallery">
@@ -42,20 +43,19 @@
     </div>
 
     <div class="product-info">
-      <div class="product-info__shop" id="productShop"></div>
-      <h1 class="product-info__title" id="productTitle"></h1>
+      <div class="product-info__shop" id="productShop">Chargement...</div>
+      <h1 class="product-info__title" id="productTitle">Chargement...</h1>
       
       <div class="product-info__prices">
-        <span class="price-current" id="productPrice"></span>
+        <span class="price-current" id="productPrice">0 FCFA</span>
         <span class="price-old" id="productOldPrice"></span>
         <span class="badge badge--discount" id="productDiscount" style="display:none;"></span>
       </div>
 
       <p class="product-info__desc" id="productDesc">
-        Un produit de qualité supérieure, disponible exclusivement sur ZemarShop.
+        Chargement de la description...
       </p>
 
-      <!-- COULEURS ET TAILLES AVEC FONCTIONS -->
       <div class="product-variants">
         <div class="variant-group">
           <span class="variant-label">Couleur</span>
@@ -88,51 +88,73 @@
   <script type="module">
     import { renderNavbar } from './js/ui/navbar.js';
     import { renderFooter } from './js/ui/footer.js';
+    import { initSupabase } from './js/supabase-client.js';
     import { formatPrice } from './js/utils/format.js';
 
     renderNavbar('shop'); 
     renderFooter();
 
-    const productsDB = {
-      'p1': { id: 'p1', name: 'Robe africaine wax élégante', price: 15000, oldPrice: 20000, shop: 'Boutique Awa', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600' },
-      'p2': { id: 'p2', name: 'Sneakers blanches homme', price: 22500, oldPrice: null, shop: 'Kicks CI', image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600' },
-      'p3': { id: 'p3', name: 'Sac à main cuir premium', price: 18000, oldPrice: 24000, shop: 'Élégance Shop', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600' },
-      'p4': { id: 'p4', name: 'Casque Bluetooth sans fil', price: 12500, oldPrice: 15000, shop: 'TechZone', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600' },
-      'p5': { id: 'p5', name: 'Montre connectée sport', price: 32000, oldPrice: null, shop: 'Gadget CI', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600' },
-      'p6': { id: 'p6', name: 'Parfum femme délicat', price: 9500, oldPrice: 13000, shop: 'Beauty Store', image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600' },
-      'p7': { id: 'p7', name: 'Smartphone Android 128Go', price: 85000, oldPrice: 95000, shop: 'Phone City', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600' },
-      'p8': { id: 'p8', name: 'Lampe déco design moderne', price: 7500, oldPrice: null, shop: 'Maison & Co', image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600' }
-    };
+    let product = null;
 
-    const params = new URLSearchParams(window.location.search);
-    const productId = params.get('id');
-    const product = productsDB[productId] || productsDB['p1'];
+    async function init() {
+      const sb = await initSupabase();
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('id');
 
-    // Remplissage
-    document.getElementById('productImage').src = product.image;
-    document.getElementById('thumb1').src = product.image;
-    document.getElementById('thumb2').src = product.image;
-    document.getElementById('thumb3').src = product.image;
-    
-    document.getElementById('productShop').textContent = product.shop;
-    document.getElementById('productTitle').textContent = product.name;
-    document.getElementById('productPrice').textContent = formatPrice(product.price);
-    
-    if (product.oldPrice) {
-      document.getElementById('productOldPrice').textContent = formatPrice(product.oldPrice);
-      const discount = Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
-      document.getElementById('productDiscount').textContent = `-${discount}%`;
-      document.getElementById('productDiscount').style.display = 'inline-flex';
-    } else {
-      document.getElementById('productOldPrice').style.display = 'none';
-      document.getElementById('productDiscount').style.display = 'none';
+      if (!productId) {
+        document.getElementById('productTitle').textContent = "Produit introuvable";
+        return;
+      }
+
+      // ON CHERCHE LE PRODUIT DANS LA VRAIE BASE DE DONNÉES
+      const { data, error } = await sb
+        .from('products')
+        .select(`id, name, description, price_fcfa, old_price_fcfa, image_url, shops ( name )`)
+        .eq('id', productId)
+        .single(); // .single() car on ne veut qu'un seul résultat
+
+      if (error || !data) {
+        console.error(error);
+        document.getElementById('productTitle').textContent = "Produit introuvable";
+        document.getElementById('productDesc').textContent = "Désolé, ce produit n'existe pas ou n'est plus disponible.";
+        return;
+      }
+
+      product = data;
+
+      // Remplissage de la page
+      const img = product.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600';
+      
+      document.getElementById('productImage').src = img;
+      document.getElementById('thumb1').src = img;
+      document.getElementById('thumb2').src = img;
+      document.getElementById('thumb3').src = img;
+      
+      document.getElementById('productShop').textContent = product.shops?.name || 'Boutique Zemar';
+      document.getElementById('productTitle').textContent = product.name;
+      document.getElementById('productPrice').textContent = formatPrice(product.price_fcfa);
+      document.getElementById('productDesc').textContent = product.description;
+      
+      if (product.old_price_fcfa) {
+        document.getElementById('productOldPrice').textContent = formatPrice(product.old_price_fcfa);
+        const discount = Math.round(((product.old_price_fcfa - product.price_fcfa) / product.old_price_fcfa) * 100);
+        document.getElementById('productDiscount').textContent = `-${discount}%`;
+        document.getElementById('productDiscount').style.display = 'inline-flex';
+      } else {
+        document.getElementById('productOldPrice').style.display = 'none';
+        document.getElementById('productDiscount').style.display = 'none';
+      }
+
+      // Afficher la page une fois chargée
+      const content = document.getElementById('productContent');
+      content.style.visibility = 'visible';
+      content.style.opacity = '1';
     }
 
     // --- VARIABLES POUR LES CHOIX ---
     let selectedColor = 'Noir';
     let selectedSize = 'S';
 
-    // --- FONCTIONS DE SÉLECTION ---
     window.selectColor = function(color, btn) {
       selectedColor = color;
       document.querySelectorAll('#colorOptions .variant-btn').forEach(b => b.classList.remove('is-active'));
@@ -145,11 +167,10 @@
       btn.classList.add('is-active');
     };
 
-    // --- AJOUT AU PANIER ---
     function addToCart() {
-      let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
+      if (!product) return;
       
-      // ID unique basé sur produit + couleur + taille
+      let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
       const uniqueId = `${product.id}-${selectedColor}-${selectedSize}`;
       
       const existingItem = cart.find(item => item.uniqueId === uniqueId);
@@ -160,6 +181,10 @@
         cart.push({ 
           id: product.id, 
           uniqueId: uniqueId,
+          name: product.name,
+          price: product.price_fcfa,
+          image: product.image_url,
+          shop: product.shops?.name,
           color: selectedColor,
           size: selectedSize,
           quantity: 1 
@@ -177,7 +202,6 @@
       }
     }
 
-    // BOUTON AJOUTER
     document.getElementById('btnAddToCart').addEventListener('click', function(e) {
       const btn = e.currentTarget;
       addToCart();
@@ -196,15 +220,12 @@
       }, 2000);
     });
 
-    // BOUTON COMMANDER
     document.getElementById('btnBuyNow').addEventListener('click', function() {
       addToCart();
       window.location.href = './cart.html';
     });
 
-    const content = document.getElementById('productContent');
-    content.style.visibility = 'visible';
-    content.style.opacity = '1';
+    init();
   </script>
 </body>
 </html>
