@@ -10,7 +10,13 @@ export async function renderNavbar(activePage = 'home') {
   const sb = await initSupabase();
   const { data: { session } } = await sb.auth.getSession();
 
-  // 2. Définir les liens de navigation
+  // 2. Détecter si on est dans un sous-dossier (client, vendor, admin)
+  // On utilise window.location.pathname pour être sûr
+  const path = window.location.pathname;
+  const isSubfolder = path.includes('/client/') || path.includes('/vendor/') || path.includes('/admin/');
+  const basePath = isSubfolder ? '../' : './';
+
+  // 3. Définir les liens de navigation
   const links = [
     { href: 'index.html', label: 'Accueil', key: 'home' },
     { href: 'shop.html', label: 'Boutique', key: 'shop' },
@@ -19,41 +25,41 @@ export async function renderNavbar(activePage = 'home') {
     { href: 'contact.html', label: 'Contact', key: 'contact' },
   ];
 
-  const isClientArea = activePage === 'client';
-  const isVendorArea = activePage === 'vendor';
-  const isAdminArea = activePage === 'admin';
-  const isSubfolder = isClientArea || isVendorArea || isAdminArea;
-  const basePath = isSubfolder ? '../' : './';
-
-  const adjustedLinks = links.map(l => ({
-    ...l,
-    href: isSubfolder ? '../' + l.href : './' + l.href
-  }));
-
-  const desktopLinks = adjustedLinks
-    .map(l => `<a href="${l.href}" class="${l.key === activePage ? 'active' : ''}">${l.label}</a>`)
+  const desktopLinks = links
+    .map(l => `<a href="${basePath}${l.href}" class="${l.key === activePage ? 'active' : ''}">${l.label}</a>`)
     .join('');
 
-  const mobileLinks = adjustedLinks
-    .map(l => `<a href="${l.href}">${l.label}</a>`)
+  const mobileLinks = links
+    .map(l => `<a href="${basePath}${l.href}">${l.label}</a>`)
     .join('');
 
-  // 3. Gérer le bouton de connexion selon la session
+  // 4. Gérer le bouton de connexion et le rôle
   let authBtnHtml = '';
   let mobileAuthBtnHtml = '';
 
   if (session) {
-    // L'utilisateur est connecté
-    const userEmail = session.user.email;
-    authBtnHtml = `<a href="${basePath}client/dashboard.html" class="btn btn--ghost btn--sm navbar__hide-mobile">Mon Compte</a>`;
-    mobileAuthBtnHtml = `<a href="${basePath}client/dashboard.html" class="btn btn--ghost btn--full">Mon Compte</a>`;
+    // On récupère le rôle pour rediriger au bon endroit
+    const { data: profile } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+    const role = profile ? profile.role : 'client';
+    
+    let dashboardLink = 'client/dashboard.html';
+    if (role === 'admin') dashboardLink = 'admin/dashboard.html';
+    if (role === 'vendor') dashboardLink = 'vendor/dashboard.html';
+
+    // Le lien vers le dashboard doit être relatif au sous-dossier
+    // Si on est déjà dans /admin/, on va vers dashboard.html, sinon ../admin/dashboard.html
+    const profileLink = isSubfolder 
+      ? (path.includes(`/${role}/`) ? './dashboard.html' : `../${role}/dashboard.html`)
+      : `./${dashboardLink}`;
+
+    authBtnHtml = `<a href="${profileLink}" class="btn btn--ghost btn--sm navbar__hide-mobile">Mon Espace</a>`;
+    mobileAuthBtnHtml = `<a href="${profileLink}" class="btn btn--ghost btn--full">Mon Espace</a>`;
   } else {
-    // L'utilisateur n'est pas connecté
     authBtnHtml = `<a href="${basePath}login.html" class="btn btn--ghost btn--sm navbar__hide-mobile">Connexion</a>`;
     mobileAuthBtnHtml = `<a href="${basePath}login.html" class="btn btn--ghost btn--full">Connexion</a>`;
   }
 
-  // 4. Construire la navbar
+  // 5. Construire la navbar
   const svgLogo = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40" height="36" style="display: block;">
       <g fill="none" stroke="#E60023" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
