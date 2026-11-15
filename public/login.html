@@ -101,15 +101,28 @@
         return;
       }
 
-      // 2. Connexion réussie
-      // On récupère le profil pour savoir s'il est client ou vendeur
-      const { data: profile } = await sb.from('profiles').select('role').eq('id', data.user.id).single();
+      // 2. Connexion réussie : on récupère le rôle
+      const { data: profile, error: profileError } = await sb
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
 
-      // On le redirige vers le bon endroit
-      if (profile && profile.role === 'vendor') {
-        window.location.href = './vendor/dashboard.html';
-      } else if (profile && profile.role === 'admin') {
+      if (profileError || !profile) {
+        errorEl.textContent = "Profil introuvable. Contactez le support.";
+        errorEl.style.display = 'block';
+        btn.textContent = 'Se connecter';
+        btn.disabled = false;
+        return;
+      }
+
+      // 3. Redirection intelligente selon le rôle
+      console.log("Rôle de l'utilisateur connecté :", profile.role);
+
+      if (profile.role === 'admin') {
         window.location.href = './admin/dashboard.html';
+      } else if (profile.role === 'vendor') {
+        window.location.href = './vendor/dashboard.html';
       } else {
         window.location.href = './client/dashboard.html';
       }
