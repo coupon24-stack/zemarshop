@@ -4,34 +4,138 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ZemarShop — Tout ce que tu cherches, au même endroit.</title>
+  <meta name="description" content="ZemarShop : la marketplace ivoirienne. Des milliers de produits de vendeurs vérifiés, livrés chez vous." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="./css/main.css" />
   <link rel="stylesheet" href="./css/components.css" />
   <link rel="stylesheet" href="./css/pages/home.css" />
 </head>
 <body>
 
-  <!-- ZONE DE TEST TECHNIQUE -->
-  <div style="background: #fff; border: 3px solid red; padding: 16px; margin: 16px; border-radius: 8px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
-    <strong style="color: red;">ZONE DE TEST SUPABASE :</strong>
-    <div id="testResult">Chargement en cours...</div>
-  </div>
-
   <header class="navbar" id="navbar"></header>
 
   <section class="hero">
     <div class="container hero__inner">
       <div class="hero__content">
+        <span class="badge">Marketplace ivoirienne</span>
         <h1>Bienvenue sur <span class="text-gradient">ZemarShop</span></h1>
-        <p>Découvrez des milliers de produits.</p>
+        <p>Découvrez des milliers de produits et commandez facilement depuis votre téléphone.</p>
+        <div class="hero__cta">
+          <a href="./shop.html" class="btn btn--primary btn--lg">Découvrir la boutique</a>
+          <a href="./register-vendor.html" class="btn btn--outline btn--lg">Devenir vendeur</a>
+        </div>
+        <ul class="hero__stats">
+          <li><strong>1000+</strong><span>Produits</span></li>
+          <li><strong>50+</strong><span>Boutiques</span></li>
+          <li><strong>10%</strong><span>Commission</span></li>
+        </ul>
+      </div>
+      <div class="hero__visual" aria-hidden="true">
+        <div class="hero__blob"></div>
+        <div class="hero__cards">
+          <div class="floating-card floating-card--1">🛍️ Mode</div>
+          <div class="floating-card floating-card--2">📱 Tech</div>
+          <div class="floating-card floating-card--3">💄 Beauté</div>
+          <div class="floating-card floating-card--4">🏠 Maison</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="search-section">
+    <div class="container">
+      <form class="search-form" id="searchFormHome">
+        <div class="search-form__field">
+          <svg class="search-form__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
+          <input type="search" id="searchInputHome" placeholder="Rechercher un produit..." aria-label="Rechercher" />
+        </div>
+        <button type="submit" class="btn btn--primary">Rechercher</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="categories section" id="categories">
+    <div class="container">
+      <header class="section__head">
+        <h2>Explorer par catégorie</h2>
+        <a href="./shop.html#categories" class="link-arrow">Tout voir (12) →</a>
+      </header>
+      <div class="categories__scroll" id="categoriesGrid"></div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <header class="section__head">
+        <h2>Produits populaires</h2>
+        <a href="./shop.html" class="link-arrow">Voir plus →</a>
+      </header>
+      <div class="products-grid" id="popularProducts">
+        <!-- Les produits chargeront ici -->
+        <div class="skeleton skeleton--image" style="width: 100%;"></div>
+        <div class="skeleton skeleton--image" style="width: 100%;"></div>
       </div>
     </div>
   </section>
 
   <section class="section">
     <div class="container">
-      <h2>Produits populaires</h2>
-      <div class="products-grid" id="popularProducts"></div>
+      <header class="section__head">
+        <h2>Nouveautés</h2>
+        <a href="./shop.html?sort=new" class="link-arrow">Voir plus →</a>
+      </header>
+      <div class="products-grid" id="newProducts">
+        <!-- Les produits chargeront ici -->
+        <div class="skeleton skeleton--image" style="width: 100%;"></div>
+        <div class="skeleton skeleton--image" style="width: 100%;"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--alt">
+    <div class="container">
+      <header class="section__head section__head--center">
+        <h2>Pourquoi choisir ZemarShop ?</h2>
+        <p>Une plateforme pensée pour vous, vendeurs comme acheteurs.</p>
+      </header>
+      <div class="features">
+        <div class="feature">
+          <div class="feature__icon">🏪</div>
+          <h3>Plusieurs vendeurs réunis</h3>
+          <p>Toutes les meilleures boutiques sur une seule plateforme.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">🎁</div>
+          <h3>Large choix de produits</h3>
+          <p>Mode, tech, maison, beauté… Des milliers d'articles.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">⚡</div>
+          <h3>Commande simple</h3>
+          <p>Commandez en quelques clics, payez à la livraison.</p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">🚚</div>
+          <h3>Livraison coordonnée</h3>
+          <p>Notre équipe organise chaque livraison avec vous.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="vendor-cta">
+    <div class="container vendor-cta__inner">
+      <div>
+        <h2>Vous avez des produits à vendre ?</h2>
+        <p>Rejoignez ZemarShop et développez votre activité.</p>
+      </div>
+      <a href="./register-vendor.html" class="btn btn--white">Devenir vendeur</a>
     </div>
   </section>
 
@@ -40,64 +144,89 @@
   <script type="module">
     import { renderNavbar } from './js/ui/navbar.js';
     import { renderFooter } from './js/ui/footer.js';
-    import { initSupabase } from './js/supabase-client.js';
+    import { initSupabase, getCategories } from './js/supabase-client.js';
+    import { formatPrice, discountPercent, primaryImage } from './js/utils/format.js';
 
     renderNavbar('home');
     renderFooter();
 
-    // TEST : On interroge Supabase directement
-    async function runTest() {
-      const testDiv = document.getElementById('testResult');
-      try {
-        const sb = await initSupabase();
-        
-        if (!sb) {
-          testDiv.innerHTML = "❌ ERREUR : Supabase n'est pas initialisé. Vérifie ton fichier config.js.";
-          return;
-        }
+    const sb = await initSupabase();
 
-        // Test 1 : Lire tous les produits
-        const { data: products, error: errP } = await sb.from('products').select('*');
-        // Test 2 : Lire toutes les boutiques
-        const { data: shops, error: errS } = await sb.from('shops').select('*');
+    // 1. RECHERCHE
+    document.getElementById('searchFormHome').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const query = document.getElementById('searchInputHome').value.trim();
+      if (query) window.location.href = `./shop.html?q=${encodeURIComponent(query)}`;
+    });
 
-        let message = "";
-
-        if (errP) {
-          message += `❌ Erreur lecture produits : ${errP.message}\n`;
-        } else {
-          message += `✅ Produits trouvés : ${products.length}\n`;
-          if (products.length > 0) {
-             message += `Premier produit : ${products[0].name} (Status: ${products[0].status})\n`;
-          }
-        }
-
-        if (errS) {
-          message += `❌ Erreur lecture boutiques : ${errS.message}\n`;
-        } else {
-          message += `✅ Boutiques trouvées : ${shops.length}\n`;
-        }
-
-        testDiv.innerHTML = message;
-
-        // On essaie d'afficher les produits sur la page
-        const grid = document.getElementById('popularProducts');
-        if (products && products.length > 0) {
-          grid.innerHTML = products.map(p => `
-            <div style="background:white; padding:10px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-              <img src="${p.image_url}" style="width:100%; height:100px; object-fit:cover; border-radius:4px;" />
-              <h3 style="font-size:14px; margin-top:8px;">${p.name}</h3>
-              <p style="color:red; font-weight:bold;">${p.price_fcfa} FCFA</p>
-            </div>
-          `).join('');
-        }
-
-      } catch (e) {
-        testDiv.innerHTML = "❌ Erreur inattendue : " + e.message;
-      }
+    // 2. CATÉGORIES
+    async function loadCategories() {
+      const container = document.getElementById('categoriesGrid');
+      const categories = await getCategories();
+      if (!categories) return;
+      container.innerHTML = categories.map(cat => `
+        <a href="./shop.html?category=${cat.slug}" class="category-card">
+          <span class="category-card__icon">${cat.icon || '📦'}</span>
+          <span class="category-card__name">${cat.name}</span>
+        </a>
+      `).join('');
     }
 
-    runTest();
+    // 3. PRODUITS
+    function createProductCard(product) {
+      const img = primaryImage(product);
+      const discount = discountPercent(product.price_fcfa, product.old_price_fcfa);
+      const oldPriceHtml = product.old_price_fcfa ? `<span class="product-card__old-price">${formatPrice(product.old_price_fcfa)}</span>` : '';
+      const discountBadge = discount ? `<span class="badge badge--discount">-${discount}%</span>` : '';
+      const shopName = product.shops?.name || 'Boutique Zemar';
+
+      return `
+        <article class="product-card" onclick="window.location.href='./product.html?id=${product.id}'" style="cursor: pointer;">
+          <div class="product-card__image-wrap">
+            <img class="product-card__image" src="${img}" alt="${product.name}" loading="lazy" />
+            <div class="product-card__badges">${discountBadge}</div>
+            <button class="product-card__favorite" aria-label="Favori">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="product-card__body">
+            <div class="product-card__shop">${shopName}</div>
+            <h3 class="product-card__name">${product.name}</h3>
+            <div class="product-card__prices">
+              <span class="product-card__price">${formatPrice(product.price_fcfa)}</span>
+              ${oldPriceHtml}
+            </div>
+            <div class="product-card__actions">
+              <button class="btn btn--primary">Voir le produit</button>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    async function loadProducts() {
+      const { data: products, error } = await sb.from('products').select(`
+        id, name, price_fcfa, old_price_fcfa, image_url, shops ( name )
+      `).eq('status', 'approved').order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Erreur de chargement", error);
+        return;
+      }
+
+      const popularGrid = document.getElementById('popularProducts');
+      const newGrid = document.getElementById('newProducts');
+
+      // On affiche les 4 premiers dans populaires, et les 4 derniers dans nouveautés
+      popularGrid.innerHTML = products.slice(0, 4).map(createProductCard).join('');
+      newGrid.innerHTML = products.slice(-4).map(createProductCard).join('');
+    }
+
+    // LANCEMENT
+    loadCategories();
+    loadProducts();
   </script>
 </body>
 </html>
