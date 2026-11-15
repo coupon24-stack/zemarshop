@@ -28,7 +28,6 @@
     </button>
   </div>
 
-  <!-- Le contenu est masqué au départ pour éviter le flash de la robe -->
   <main class="product-detail container section" id="productContent" style="visibility: hidden; opacity: 0; transition: opacity 0.3s ease; margin-top: 0; padding-top: 16px;">
     
     <div class="product-gallery">
@@ -111,7 +110,7 @@
         .from('products')
         .select(`id, name, description, price_fcfa, old_price_fcfa, image_url, shops ( name )`)
         .eq('id', productId)
-        .single(); // .single() car on ne veut qu'un seul résultat
+        .single();
 
       if (error || !data) {
         console.error(error);
@@ -195,9 +194,11 @@
       
       const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
       localStorage.setItem('zemar_cart_count', totalItems);
+      
       const badge = document.getElementById('cartCount');
       if (badge) {
         badge.textContent = totalItems;
+        badge.style.display = 'flex'; // <-- LIGNE AJOUTÉE POUR FORCER L'AFFICHAGE
         badge.classList.add('is-visible');
       }
     }
