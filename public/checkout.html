@@ -21,37 +21,36 @@
   <main class="cart-page container section">
     <h1 class="cart-page__title">Validation de commande</h1>
 
-    <!-- On utilise cart-content qui gère déjà le responsive (1 col mobile, 2 col desktop) -->
     <div class="cart-content">
       
       <!-- Formulaire de livraison -->
       <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm);">
         <h2 style="margin-bottom: 16px; font-size: 18px;">Informations de livraison</h2>
         
-        <form id="checkoutForm" onsubmit="event.preventDefault();">
+        <form id="checkoutForm">
           <div class="field">
             <label class="field__label">Nom complet</label>
-            <input type="text" class="field__input" placeholder="Ex: Koffi Yao" required />
+            <input type="text" class="field__input" id="deliveryName" placeholder="Ex: Koffi Yao" required />
           </div>
           
           <div class="field" style="margin-top: 12px;">
             <label class="field__label">Numéro de téléphone</label>
-            <input type="tel" class="field__input" placeholder="Ex: 0700000000" required />
+            <input type="tel" class="field__input" id="deliveryPhone" placeholder="Ex: 0700000000" required />
           </div>
 
           <div class="field" style="margin-top: 12px;">
             <label class="field__label">Ville</label>
-            <input type="text" class="field__input" placeholder="Ex: Abidjan" required />
+            <input type="text" class="field__input" id="deliveryCity" placeholder="Ex: Abidjan" required />
           </div>
 
           <div class="field" style="margin-top: 12px;">
             <label class="field__label">Commune</label>
-            <input type="text" class="field__input" placeholder="Ex: Cocody" required />
+            <input type="text" class="field__input" id="deliveryCommune" placeholder="Ex: Cocody" required />
           </div>
 
           <div class="field" style="margin-top: 12px;">
             <label class="field__label">Adresse de livraison</label>
-            <input type="text" class="field__input" placeholder="Ex: Rue des Jardins" required />
+            <input type="text" class="field__input" id="deliveryAddress" placeholder="Ex: Rue des Jardins" required />
           </div>
 
           <h2 style="margin-top: 24px; margin-bottom: 16px; font-size: 18px;">Mode de paiement</h2>
@@ -70,9 +69,7 @@
         <div class="cart-summary" style="position: static;">
           <h2 class="cart-summary__title">Récapitulatif</h2>
           
-          <div id="checkoutItems" style="margin-bottom: 16px; font-size: 14px; color: var(--color-text-soft);">
-            <!-- Les produits seront injectés ici -->
-          </div>
+          <div id="checkoutItems" style="margin-bottom: 16px; font-size: 14px; color: var(--color-text-soft);"></div>
 
           <div class="cart-summary__row" style="border-top: 1px solid var(--color-border); padding-top: 12px;">
             <span>Sous-total</span>
@@ -90,10 +87,6 @@
           <button type="submit" form="checkoutForm" class="btn btn--primary btn--lg btn--full" style="margin-top: 16px;" id="btnConfirmOrder">
             Confirmer la commande
           </button>
-          
-          <p style="text-align: center; font-size: 12px; color: var(--color-text-muted); margin-top: 12px;">
-            En confirmant, vous acceptez nos conditions générales.
-          </p>
         </div>
       </div>
 
@@ -105,24 +98,24 @@
   <script type="module">
     import { renderNavbar } from './js/ui/navbar.js';
     import { renderFooter } from './js/ui/footer.js';
+    import { initSupabase } from './js/supabase-client.js';
+    import { formatPrice } from './js/utils/format.js';
 
     renderNavbar('checkout');
     renderFooter();
 
+    const sb = await initSupabase();
     const DELIVERY_FEE = 1500;
-    const productsDB = {
-      'p1': { id: 'p1', name: 'Robe africaine wax élégante', price: 15000, image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600' },
-      'p2': { id: 'p2', name: 'Sneakers blanches homme', price: 22500, image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600' },
-      'p3': { id: 'p3', name: 'Sac à main cuir premium', price: 18000, image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600' },
-      'p4': { id: 'p4', name: 'Casque Bluetooth sans fil', price: 12500, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600' },
-      'p5': { id: 'p5', name: 'Montre connectée sport', price: 32000, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600' },
-      'p6': { id: 'p6', name: 'Parfum femme délicat', price: 9500, image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=600' },
-      'p7': { id: 'p7', name: 'Smartphone Android 128Go', price: 85000, image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600' },
-      'p8': { id: 'p8', name: 'Lampe déco design moderne', price: 7500, image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600' }
-    };
-
-    // 1. Charger le panier
     let cart = [];
+
+    // 1. Vérifier la connexion
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      alert("Veuillez vous connecter pour passer commande.");
+      window.location.href = './login.html';
+    }
+
+    // 2. Charger le panier
     try {
       const saved = localStorage.getItem('zemar_cart');
       if (saved) cart = JSON.parse(saved);
@@ -132,43 +125,79 @@
       window.location.href = './cart.html';
     }
 
-    // 2. Afficher les articles dans le récapitulatif
+    // 3. Afficher le récapitulatif
     const itemsEl = document.getElementById('checkoutItems');
     let subtotal = 0;
 
     itemsEl.innerHTML = cart.map(item => {
-      const p = productsDB[item.id];
-      if (!p) return '';
-      subtotal += p.price * item.quantity;
+      subtotal += item.price * item.quantity;
       return `
         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-          <span>${item.quantity} x ${p.name}</span>
-          <span>${(p.price * item.quantity).toLocaleString('fr-FR')} FCFA</span>
+          <span>${item.quantity} x ${item.name}</span>
+          <span>${formatPrice(item.price * item.quantity)}</span>
         </div>
       `;
     }).join('');
 
     const total = subtotal + DELIVERY_FEE;
-    document.getElementById('checkoutSubtotal').textContent = subtotal.toLocaleString('fr-FR') + ' FCFA';
-    document.getElementById('checkoutDelivery').textContent = DELIVERY_FEE.toLocaleString('fr-FR') + ' FCFA';
-    document.getElementById('checkoutTotal').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+    document.getElementById('checkoutSubtotal').textContent = formatPrice(subtotal);
+    document.getElementById('checkoutDelivery').textContent = formatPrice(DELIVERY_FEE);
+    document.getElementById('checkoutTotal').textContent = formatPrice(total);
 
-    // 3. Confirmer la commande
-    document.getElementById('checkoutForm').addEventListener('submit', (e) => {
+    // 4. Enregistrer la commande dans Supabase
+    document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const btn = document.getElementById('btnConfirmOrder');
       btn.textContent = 'Traitement en cours...';
       btn.disabled = true;
 
-      setTimeout(() => {
+      try {
+        // On génère un numéro de commande unique (ex: ZM-1715000000000)
+        const orderNumber = 'ZM-' + Date.now().toString().slice(-6);
+
+        // A. Insérer la commande principale
+        const { data: order, error: orderError } = await sb.from('orders').insert([{
+          order_number: orderNumber,
+          client_id: session.user.id,
+          delivery_full_name: document.getElementById('deliveryName').value,
+          delivery_phone: document.getElementById('deliveryPhone').value,
+          delivery_city: document.getElementById('deliveryCity').value,
+          delivery_commune: document.getElementById('deliveryCommune').value,
+          delivery_address: document.getElementById('deliveryAddress').value,
+          total_fcfa: total,
+          status: 'new'
+        }]).select().single();
+
+        if (orderError) throw orderError;
+
+        // B. Insérer les lignes de commande (order_items)
+        const orderItemsData = cart.map(item => ({
+          order_id: order.id,
+          product_id: item.id,
+          product_name: item.name,
+          unit_price_fcfa: item.price,
+          quantity: item.quantity,
+          commission_fcfa: item.price * 0.10 // Calcul de la commission de 10%
+        }));
+
+        const { error: itemsError } = await sb.from('order_items').insert(orderItemsData);
+        if (itemsError) throw itemsError;
+
+        // C. Vider le panier
         localStorage.removeItem('zemar_cart');
         localStorage.removeItem('zemar_cart_count');
-        
-        alert("Commande confirmée ! Un administrateur vous contactera bientôt pour la livraison.");
-        window.location.href = './index.html';
-      }, 1500);
+
+        // D. Rediriger vers la page de succès
+        window.location.href = `./order-success.html?num=${orderNumber}`;
+
+      } catch (error) {
+        console.error(error);
+        alert("Erreur lors de la commande : " + error.message);
+        btn.textContent = 'Confirmer la commande';
+        btn.disabled = false;
+      }
     });
   </script>
 </body>
-  </html>
+</html>
