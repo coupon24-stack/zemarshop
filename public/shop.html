@@ -96,14 +96,12 @@
       const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
       const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-      // 1. Vérifier la session et charger les favoris
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         const { data: favs } = await sb.from('favorites').select('product_id').eq('client_id', session.user.id);
         if (favs) userFavorites = favs.map(f => f.product_id);
       }
 
-      // 2. Charger les produits
       const { data: products } = await sb
         .from('products')
         .select(`id, name, price_fcfa, old_price_fcfa, image_url, category_id, shops ( name )`)
@@ -111,7 +109,6 @@
 
       if (products) allProducts = products;
 
-      // 3. Charger les catégories
       const { data: categories } = await sb.from('categories').select('*');
       
       const params = new URLSearchParams(window.location.search);
@@ -170,14 +167,16 @@
 
         return `
           <article class="product-card" style="position: relative;">
-            <!-- Image cliquable SEULEMENT -->
-            <div class="product-card__image-wrap" onclick="window.location.href='./product.html?id=${p.id}'" style="cursor: pointer;">
-              <img class="product-card__image" src="${img}" alt="${p.name}" loading="lazy" />
+            
+            <!-- L'image elle-même est cliquable -->
+            <div class="product-card__image-wrap">
+              <img class="product-card__image" src="${img}" alt="${p.name}" loading="lazy" 
+                   onclick="window.location.href='./product.html?id=${p.id}'" style="cursor: pointer;" />
               <div class="product-card__badges">${badge}</div>
             </div>
 
-            <!-- Bouton Favori SORTI de l'image pour être indépendant -->
-            <button class="product-card__favorite ${favClass}" onclick="event.stopPropagation(); window.toggleFavorite('${p.id}', this)" aria-label="Favori" style="position: absolute; top: 8px; right: 8px; z-index: 10;">
+            <!-- Le bouton favori est totalement indépendant -->
+            <button class="product-card__favorite ${favClass}" onclick="window.toggleFavorite('${p.id}', this)" aria-label="Favori" style="position: absolute; top: 8px; right: 8px; z-index: 10;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
@@ -199,7 +198,6 @@
       }).join('');
     }
 
-    // Événements
     searchInput.addEventListener('input', renderGrid);
     sortSelect.addEventListener('change', renderGrid);
 
@@ -214,21 +212,15 @@
 
     loadShop();
 
-    // --- FONCTIONS GLOBALES ---
-    
     window.addToCartQuick = function(id, name, price, image, shop) {
       let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
       const uniqueId = `${id}-Défaut-Défaut`;
-      
       const existingItem = cart.find(item => item.uniqueId === uniqueId);
       
       if (existingItem) {
         existingItem.quantity += 1;
       } else {
-        cart.push({ 
-          id: id, uniqueId: uniqueId, name: name, price: price,
-          image: image, shop: shop, color: 'Défaut', size: 'Défaut', quantity: 1 
-        });
+        cart.push({ id, uniqueId, name, price, image, shop, color: 'Défaut', size: 'Défaut', quantity: 1 });
       }
       
       localStorage.setItem('zemar_cart', JSON.stringify(cart));
