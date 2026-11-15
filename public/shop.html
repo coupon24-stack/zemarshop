@@ -16,6 +16,11 @@
 </head>
 <body>
 
+  <!-- Toast -->
+  <div id="toast" style="visibility: hidden; min-width: 250px; background-color: #16A34A; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: visibility 0s, opacity 0.5s linear; opacity: 0;">
+    ✓ Produit ajouté au panier !
+  </div>
+
   <header class="navbar" id="navbar"></header>
 
   <section class="shop-header">
@@ -57,7 +62,6 @@
   <section class="shop-products section">
     <div class="container">
       <div class="products-grid" id="shopGrid">
-        <!-- Squelette de chargement -->
         <div class="skeleton skeleton--image" style="width: 100%; aspect-ratio: 1;"></div>
         <div class="skeleton skeleton--image" style="width: 100%; aspect-ratio: 1;"></div>
       </div>
@@ -90,7 +94,6 @@
       const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
       const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-      // 1. Charger les produits
       const { data: products } = await sb
         .from('products')
         .select(`id, name, price_fcfa, old_price_fcfa, image_url, shops ( name )`)
@@ -98,7 +101,6 @@
 
       if (products) allProducts = products;
 
-      // 2. Charger les catégories (juste pour l'affichage visuel des filtres)
       const { data: categories } = await sb.from('categories').select('*');
       
       filtersScroll.innerHTML = '<button class="filter-pill is-active">Tout voir</button>';
@@ -111,7 +113,6 @@
         });
       }
 
-      // 3. Premier affichage
       renderGrid();
     }
 
@@ -151,17 +152,58 @@
                 <span class="product-card__price">${formatPrice(p.price_fcfa)}</span>
                 ${oldPrice}
               </div>
+              <div class="product-card__actions">
+                <!-- BOUTON AJOUTER DIRECT -->
+                <button class="btn btn--primary" onclick="event.stopPropagation(); window.addToCartQuick('${p.id}', '${p.name}', ${p.price_fcfa}, '${img}', '${p.shops?.name || 'Boutique'}')">Ajouter</button>
+              </div>
             </div>
           </article>
         `;
       }).join('');
     }
 
-    // Événements
     searchInput.addEventListener('input', renderGrid);
     sortSelect.addEventListener('change', renderGrid);
 
     loadShop();
+
+    // FONCTION D'AJOUT RAPIDE + TOAST
+    window.addToCartQuick = function(id, name, price, image, shop) {
+      let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
+      const uniqueId = `${id}-Défaut-Défaut`;
+      
+      const existingItem = cart.find(item => item.uniqueId === uniqueId);
+      
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.push({ 
+          id: id, uniqueId: uniqueId, name: name, price: price,
+          image: image, shop: shop, color: 'Défaut', size: 'Défaut', quantity: 1 
+        });
+      }
+      
+      localStorage.setItem('zemar_cart', JSON.stringify(cart));
+      
+      const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+      localStorage.setItem('zemar_cart_count', totalItems);
+      
+      const badge = document.getElementById('cartCount');
+      if (badge) {
+        badge.textContent = totalItems;
+        badge.style.display = 'flex';
+        badge.classList.add('is-visible');
+      }
+
+      // Affichage du message Toast
+      const toast = document.getElementById('toast');
+      toast.style.visibility = 'visible';
+      toast.style.opacity = '1';
+      setTimeout(() => {
+        toast.style.visibility = 'hidden';
+        toast.style.opacity = '0';
+      }, 3000);
+    };
   </script>
 </body>
 </html>
