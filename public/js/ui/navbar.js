@@ -1,4 +1,5 @@
 // public/js/ui/navbar.js
+// Génère la navbar ZemarShop et gère le menu mobile
 
 export function renderNavbar(activePage = 'home') {
   const nav = document.getElementById('navbar');
@@ -8,14 +9,14 @@ export function renderNavbar(activePage = 'home') {
     { href: 'index.html', label: 'Accueil', key: 'home' },
     { href: 'shop.html', label: 'Boutique', key: 'shop' },
     { href: 'shop.html#categories', label: 'Catégories', key: 'categories' },
-    { href: 'auth/register-vendor.html', label: 'Devenir vendeur', key: 'vendor' },
+    { href: 'register-vendor.html', label: 'Devenir vendeur', key: 'vendor' },
     { href: 'contact.html', label: 'Contact', key: 'contact' },
   ];
 
-  // On détecte si on est dans un sous-dossier (client ou vendor)
   const isClientArea = activePage === 'client';
   const isVendorArea = activePage === 'vendor';
-  const isSubfolder = isClientArea || isVendorArea;
+  const isAdminArea = activePage === 'admin';
+  const isSubfolder = isClientArea || isVendorArea || isAdminArea;
   const basePath = isSubfolder ? '../' : './';
 
   const adjustedLinks = links.map(l => ({
@@ -31,7 +32,6 @@ export function renderNavbar(activePage = 'home') {
     .map(l => `<a href="${l.href}">${l.label}</a>`)
     .join('');
 
-  // Gestion du bouton d'action selon la page
   let authBtnHref = './login.html';
   let authBtnText = 'Connexion';
   let hideRegister = false;
@@ -40,7 +40,7 @@ export function renderNavbar(activePage = 'home') {
     authBtnHref = './dashboard.html';
     authBtnText = 'Mon Compte';
     hideRegister = true;
-  } else if (isVendorArea) {
+  } else if (isVendorArea || isAdminArea) {
     authBtnHref = './dashboard.html';
     authBtnText = 'Mon Espace';
     hideRegister = true;
@@ -80,9 +80,10 @@ export function renderNavbar(activePage = 'home') {
             <circle cx="18" cy="20" r="1.5"/>
             <path d="M6 6 5 3H2"/>
           </svg>
-          <span class="cart-count" id="cartCount">0</span>
+          <!-- On ajoute une classe par défaut cachée -->
+          <span class="cart-count" id="cartCount" style="display: none;">0</span>
         </a>
-        <a href="${isSubfolder ? './dashboard.html' : './login.html'}" class="btn btn--ghost btn--sm navbar__hide-mobile">${authBtnText}</a>
+        <a href="${authBtnHref}" class="btn btn--ghost btn--sm navbar__hide-mobile">${authBtnText}</a>
         ${registerBtn}
         <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
           <span></span><span></span><span></span>
@@ -93,7 +94,7 @@ export function renderNavbar(activePage = 'home') {
       <nav class="mobile-drawer__links">
         ${mobileLinks}
         <hr />
-        <a href="${isSubfolder ? './dashboard.html' : './login.html'}" class="btn btn--ghost btn--full">${authBtnText}</a>
+        <a href="${authBtnHref}" class="btn btn--ghost btn--full">${authBtnText}</a>
         ${hideRegister ? '' : '<a href="./register-client.html" class="btn btn--primary btn--full">Créer un compte</a>'}
       </nav>
     </div>
@@ -116,13 +117,23 @@ export function renderNavbar(activePage = 'home') {
     nav.classList.toggle('is-scrolled', window.scrollY > 10);
   }, { passive: true });
 
+  // MISE À JOUR DU BADGE (Au chargement de chaque page)
   updateCartCount();
 }
 
-function updateCartCount() {
+// Fonction globale pour mettre à jour le badge (utilisable partout)
+export function updateCartCount() {
   const el = document.getElementById('cartCount');
   if (!el) return;
+
+  // On lit le localStorage
   const count = parseInt(localStorage.getItem('zemar_cart_count') || '0', 10);
-  el.textContent = count > 0 ? String(count) : '';
-  el.classList.toggle('is-visible', count > 0);
+
+  if (count > 0) {
+    el.textContent = count;
+    el.style.display = 'flex'; // On l'affiche
+  } else {
+    el.textContent = '0';
+    el.style.display = 'none'; // On le cache complètement s'il n'y a rien
+  }
 }
