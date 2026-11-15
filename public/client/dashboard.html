@@ -21,10 +21,8 @@
   <main class="container section">
     <!-- En-tête du profil -->
     <div class="client-header">
-      <!-- On donne un ID pour changer les initiales -->
       <div class="client-avatar" id="userAvatar">...</div>
       <div class="client-info">
-        <!-- On donne un ID pour changer le nom -->
         <h1 id="userName">Chargement...</h1>
         <p id="userEmail">Chargement...</p>
       </div>
@@ -39,7 +37,7 @@
         <a href="#" class="client-nav-link">Mes adresses</a>
         <a href="#" class="client-nav-link">Mon profil</a>
         <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--color-border);">
-        <!-- On ajoute un ID pour gérer la déconnexion -->
+        <!-- Bouton de déconnexion -->
         <a href="#" class="client-nav-link" id="btnLogout" style="color: var(--color-danger);">Déconnexion</a>
       </aside>
 
@@ -86,38 +84,46 @@
       const sb = await initSupabase();
       
       // 1. On demande à Supabase si quelqu'un est connecté
-      const { data: { session }, error } = await sb.auth.getSession();
+      const { data: { session }, error: sessionError } = await sb.auth.getSession();
 
-      if (!session) {
+      if (sessionError || !session) {
         // Si personne n'est connecté, on renvoie vers la page de login
         window.location.href = '../login.html';
         return;
       }
 
       // 2. On récupère le profil (nom, email) dans la base de données
-      const { data: profile } = await sb
+      const { data: profile, error: profileError } = await sb
         .from('profiles')
         .select('full_name, email')
         .eq('id', session.user.id)
         .single();
 
-      if (profile) {
-        document.getElementById('userName').textContent = "Bonjour, " + profile.full_name + " 👋";
-        document.getElementById('userEmail').textContent = profile.email;
-        
-        // Créer les initiales (ex: Koffi Yao -> KY)
-        const initials = profile.full_name
-          .split(' ')
-          .map(n => n[0])
-          .join('')
-          .toUpperCase()
-          .substring(0, 2);
-        
-        document.getElementById('userAvatar').textContent = initials;
+      // Si erreur ou si le profil n'existe pas (ex: trigger raté)
+      if (profileError || !profile) {
+        document.getElementById('userName').textContent = "Profil introuvable";
+        document.getElementById('userEmail').textContent = "Veuillez contacter le support.";
+        document.getElementById('userAvatar').textContent = "?";
+        console.error("Erreur profil :", profileError);
+        return;
       }
+
+      // 3. On affiche les vraies données
+      document.getElementById('userName').textContent = "Bonjour, " + (profile.full_name || 'Utilisateur') + " 👋";
+      document.getElementById('userEmail').textContent = profile.email || session.user.email;
+      
+      // Créer les initiales
+      const initials = (profile.full_name || 'U')
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .substring(0, 2);
+      
+      document.getElementById('userAvatar').textContent = initials;
     }
 
-    // 3. Gestion de la déconnexion
+    // 4. Gestion de la déconnexion
     document.getElementById('btnLogout').addEventListener('click', async (e) => {
       e.preventDefault();
       const sb = await initSupabase();
