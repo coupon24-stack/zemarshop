@@ -50,18 +50,20 @@
 
   <section class="shop-filters">
     <div class="container">
-      <div class="filters-scroll" id="filtersScroll"></div>
+      <div class="filters-scroll" id="filtersScroll">
+        <!-- Les catégories s'afficheront ici -->
+      </div>
     </div>
   </section>
 
   <section class="shop-products section">
     <div class="container">
+      <!-- On met les squelettes par défaut -->
       <div class="products-grid" id="shopGrid">
-        <!-- Chargement initial -->
-        <div class="skeleton skeleton--image" style="width: 100%;"></div>
-        <div class="skeleton skeleton--image" style="width: 100%;"></div>
-        <div class="skeleton skeleton--image" style="width: 100%;"></div>
-        <div class="skeleton skeleton--image" style="width: 100%;"></div>
+        <div class="skeleton skeleton--image" style="width: 100%; aspect-ratio: 1;"></div>
+        <div class="skeleton skeleton--image" style="width: 100%; aspect-ratio: 1;"></div>
+        <div class="skeleton skeleton--image" style="width: 100%; aspect-ratio: 1;"></div>
+        <div class="skeleton skeleton--image" style="width: 100%; aspect-ratio: 1;"></div>
       </div>
       <div id="noResults" class="hidden" style="text-align:center; padding: 40px; color: var(--color-text-soft); font-weight: 600;">
         Aucun produit trouvé.
@@ -71,6 +73,134 @@
 
   <footer class="footer" id="footer"></footer>
 
-  <script type="module" src="./js/pages/shop.js"></script>
+  <script type="module">
+    import { renderNavbar } from './js/ui/navbar.js';
+    import { renderFooter } from './js/ui/footer.js';
+    import { initSupabase, getCategories } from './js/supabase-client.js';
+    import { formatPrice, discountPercent, primaryImage } from './js/utils/format.js';
+
+    renderNavbar('shop');
+    renderFooter();
+
+    let allProducts = [];
+    let currentSearch = '';
+    let currentSort = 'new';
+    let currentCategory = 'all';
+
+    const shopGrid = document.getElementById('shopGrid');
+    const noResults = document.getElementById('noResults');
+    const searchInput = document.getElementById('searchInput');
+    const sortSelect = document.getElementById('sortSelect');
+    const filtersScroll = document.getElementById('filtersScroll');
+
+    async function init() {
+      const sb = await initSupabase();
+      
+      // 1. Charger les produits
+      const { data, error } = await sb
+        .from('products')
+        .select(`id, name, price_fcfa, old_price_fcfa, image_url, category_id, shops ( name )`)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        allProducts = data;
+      } else {
+        console.error("Erreur de chargement", error);
+      }
+
+      // 2. Charger les catégories dans les filtres
+      const categories = await getCategories();
+      
+      const allBtn = document.createElement('button');
+      allBtn.className = 'filter-pill is-active';
+      allBtn.textContent = 'Tout voir';
+      allBtn.dataset.id = 'all';
+      filtersScroll.appendChild(allBtn);
+
+      if (categories) {
+        categories.forEach(cat => {
+          const btn = document.createElement('button');
+          btn.className = 'filter-pill';
+          btn.textContent = cat.name;
+          btn.dataset.id = cat.id;
+          filtersScroll.appendChild(btn);
+        });
+      }
+
+      // 3. Lire l'URL (recherche)
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('q')) {
+        currentSearch = params.get('q');
+        searchInput.value = currentSearch;
+      }
+
+      // 4. AFFICHER LES PRODUITS (remplace les squelettes)
+      renderGrid();
+    }
+
+    function renderGrid() {
+      let filtered = allProducts.filter(p => {
+        if (currentSearch && !p.name.toLowerCase().includes(currentSearch.toLowerCase())) return false;
+        if (currentCategory !== 'all' && p.category_id !== currentCategory) return false;
+        return true;
+      });
+
+      if (currentSort === 'price_asc') filtered.sort((a,b) => a.price_fcfa - b.price_fcfa);
+      if (currentSort === 'price_desc') filtered.sort((a,b) => b.price_fcfa - a.price_fcfa);
+
+      if (filtered.length === 0) {
+        shopGrid.innerHTML = '';
+        noResults.classList.remove('hidden');
+      } else {
+        noResults.classList.add('hidden');
+        shopGrid.innerHTML = filtered.map(p => {
+          const discount = discountPercent(p.price_fcfa, p.old_price_fcfa);
+          const badge = discount ? `<span class="badge badge--discount">-${discount}%</span>` : '';
+          const oldPrice = p.old_price_fcfa ? `<span class="product-card__old-price">${formatPrice(p.old_price_fcfa)}</span>` : '';
+          const img = primaryImage(p);
+          
+          return `
+            <article class="product-card" onclick="window.location.href='./product.html?id=${p.id}'" style="cursor: pointer;">
+              <div class="product-card__image-wrap">
+                <img class="product-card__image" src="${img}" alt="${p.name}" loading="lazy" />
+                <div class="product-card__badges">${badge}</div>
+              </div>
+              <div class="product-card__body">
+                <div class="product-card__shop">${p.shops?.name || 'Boutique'}</div>
+                <h3 class="product-card__name">${p.name}</h3>
+                <div class="product-card__prices">
+                  <span class="product-card__price">${formatPrice(p.price_fcfa)}</span>
+                  ${oldPrice}
+                </div>
+              </div>
+            </article>
+          `;
+        }).join('');
+      }
+    }
+
+    // Événements
+    searchInput.addEventListener('input', (e) => { currentSearch = e.target.value; renderGrid(); });
+    sortSelect.addEventListener('change', (e) => { currentSort = e.target.value; renderGrid(); });
+    
+    filtersScroll.addEventListener('click', (e) => {
+      if (e.target.classList.contains('filter-pill')) {
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('is-active'));
+        e.target.classList.add('is-active');
+        currentCategory = e.target.dataset.id;
+        renderGrid();
+      }
+    });
+
+    // Bloquer le rechargement du formulaire
+    document.getElementById('searchFormShop').addEventListener('submit', (e) => {
+      e.preventDefault();
+      currentSearch = searchInput.value;
+      renderGrid();
+    });
+
+    init();
+  </script>
 </body>
 </html>
