@@ -30,13 +30,13 @@
     </div>
 
     <div class="client-layout">
-      <!-- Menu de gauche -->
+      <!-- Menu de gauche (MIS À JOUR) -->
       <aside class="client-sidebar">
-        <a href="#" class="client-nav-link active">Tableau de bord</a>
-        <a href="#" class="client-nav-link">Mes commandes</a>
-        <a href="#" class="client-nav-link">Mes favoris</a>
-        <a href="#" class="client-nav-link">Mes adresses</a>
-        <a href="#" class="client-nav-link">Mon profil</a>
+        <a href="./dashboard.html" class="client-nav-link active">Tableau de bord</a>
+        <a href="./orders.html" class="client-nav-link">Mes commandes</a>
+        <a href="./favorites.html" class="client-nav-link">Mes favoris</a>
+        <a href="./addresses.html" class="client-nav-link">Mes adresses</a>
+        <a href="./profile.html" class="client-nav-link">Mon profil</a>
         <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--color-border);">
         <a href="#" class="client-nav-link" id="btnLogout" style="color: var(--color-danger);">Déconnexion</a>
       </aside>
@@ -62,7 +62,7 @@
         </div>
 
         <div class="client-section">
-          <h2>Mes commandes</h2>
+          <h2>Dernières commandes</h2>
           <div id="ordersList">
             <p style="color: var(--color-text-soft); font-size: 14px;">Chargement de vos commandes...</p>
           </div>
@@ -83,7 +83,6 @@
     renderNavbar('client');
     renderFooter();
 
-    // Les différents statuts
     const statusLabels = {
       'new': { text: 'Nouvelle', color: 'badge--warning' },
       'confirmed': { text: 'Confirmée', color: 'badge--info' },
@@ -95,14 +94,14 @@
     async function loadClientDashboard() {
       const sb = await initSupabase();
       
-      // 1. Vérifier que l'utilisateur est connecté
+      // 1. Vérifier la session
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
         window.location.href = '../login.html';
         return;
       }
 
-      // 2. Afficher le profil
+      // 2. Récupérer le profil
       const { data: profile } = await sb.from('profiles').select('full_name, email').eq('id', session.user.id).single();
       
       if (profile) {
@@ -113,8 +112,8 @@
         document.getElementById('userAvatar').textContent = initials;
       }
 
-      // 3. Charger les commandes du client
-      const { data: orders, error } = await sb
+      // 3. Charger les commandes
+      const { data: orders } = await sb
         .from('orders')
         .select('*, order_items ( product_name, quantity, unit_price_fcfa )')
         .eq('client_id', session.user.id)
@@ -122,26 +121,21 @@
 
       const listEl = document.getElementById('ordersList');
       
-      if (error) {
-        listEl.innerHTML = '<p style="color: var(--color-danger);">Erreur lors du chargement des commandes.</p>';
+      if (!orders || orders.length === 0) {
+        listEl.innerHTML = '<p style="color: var(--color-text-soft); font-size: 14px;">Vous n\'avez pas encore passé de commande.</p>';
         return;
       }
 
       document.getElementById('statOrders').textContent = orders.length;
 
-      if (orders.length === 0) {
-        listEl.innerHTML = '<p style="color: var(--color-text-soft); font-size: 14px;">Vous n\'avez pas encore passé de commande.</p>';
-        return;
-      }
+      // On n'affiche que les 3 dernières commandes sur le dashboard
+      const recentOrders = orders.slice(0, 3);
 
-      // 4. Afficher les commandes
-      listEl.innerHTML = orders.map(o => {
+      listEl.innerHTML = recentOrders.map(o => {
         const status = statusLabels[o.status] || { text: o.status, color: '' };
-        
-        // Afficher la liste des produits
         const itemsHtml = o.order_items.map(item => `
           <div style="font-size: 13px; color: var(--color-text-soft); margin-bottom: 2px;">
-            ${item.quantity} x ${item.product_name} — ${formatPrice(item.unit_price_fcfa)}
+            ${item.quantity} x ${item.product_name}
           </div>
         `).join('');
 
@@ -151,11 +145,7 @@
               <strong>Commande ${o.order_number}</strong>
               <span class="badge ${status.color}">${status.text}</span>
             </div>
-            
-            <div style="margin-bottom: 12px;">
-              ${itemsHtml}
-            </div>
-
+            <div style="margin-bottom: 12px;">${itemsHtml}</div>
             <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--color-border); padding-top: 12px;">
               <span style="font-size: 14px;">Total :</span>
               <strong style="color: var(--color-primary);">${formatPrice(o.total_fcfa)}</strong>
