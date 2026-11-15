@@ -89,28 +89,48 @@
     const filtersScroll = document.getElementById('filtersScroll');
 
     let allProducts = [];
+    let currentCategory = 'all';
 
     async function loadShop() {
       const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
       const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
+      // 1. Charger les produits (on ajoute category_id dans la requête)
       const { data: products } = await sb
         .from('products')
-        .select(`id, name, price_fcfa, old_price_fcfa, image_url, shops ( name )`)
+        .select(`id, name, price_fcfa, old_price_fcfa, image_url, category_id, shops ( name )`)
         .eq('status', 'approved');
 
       if (products) allProducts = products;
 
+      // 2. Charger les catégories
       const { data: categories } = await sb.from('categories').select('*');
       
-      filtersScroll.innerHTML = '<button class="filter-pill is-active">Tout voir</button>';
+      // 3. Lire l'URL (ex: shop.html?category=mode-homme ou ?q=robe)
+      const params = new URLSearchParams(window.location.search);
+      const catParam = params.get('category');
+      const searchParam = params.get('q');
+
+      if (searchParam) searchInput.value = searchParam;
+
+      // 4. Construire les boutons de filtres
+      filtersScroll.innerHTML = `<button class="filter-pill ${!catParam ? 'is-active' : ''}" data-id="all">Tout voir</button>`;
+      
       if (categories) {
         categories.forEach(cat => {
+          const isActive = cat.slug === catParam ? 'is-active' : '';
           const btn = document.createElement('button');
-          btn.className = 'filter-pill';
+          btn.className = `filter-pill ${isActive}`;
           btn.textContent = cat.name;
+          btn.dataset.id = cat.id;
           filtersScroll.appendChild(btn);
         });
+
+        // Si une catégorie est dans l'URL, on la mémorise
+        if (catParam) {
+          const matchedCat = categories.find(c => c.slug === catParam);
+          if (matchedCat) currentCategory = matchedCat.id;
+        }
       }
 
       renderGrid();
@@ -120,7 +140,13 @@
       const query = searchInput.value.toLowerCase();
       const sort = sortSelect.value;
 
-      let filtered = allProducts.filter(p => p.name.toLowerCase().includes(query));
+      let filtered = allProducts.filter(p => {
+        // Filtre recherche
+        if (query && !p.name.toLowerCase().includes(query)) return false;
+        // Filtre catégorie
+        if (currentCategory !== 'all' && p.category_id !== currentCategory) return false;
+        return true;
+      });
 
       if (sort === 'price_asc') filtered.sort((a,b) => a.price_fcfa - b.price_fcfa);
       if (sort === 'price_desc') filtered.sort((a,b) => b.price_fcfa - a.price_fcfa);
@@ -141,21 +167,18 @@
 
         return `
           <article class="product-card">
-            <!-- Image cliquable -->
             <div class="product-card__image-wrap" onclick="window.location.href='./product.html?id=${p.id}'" style="cursor: pointer;">
               <img class="product-card__image" src="${img}" alt="${p.name}" loading="lazy" />
               <div class="product-card__badges">${badge}</div>
             </div>
             <div class="product-card__body">
               <div class="product-card__shop">${p.shops?.name || 'Boutique'}</div>
-              <!-- Titre cliquable -->
               <h3 class="product-card__name" onclick="window.location.href='./product.html?id=${p.id}'" style="cursor: pointer;">${p.name}</h3>
               <div class="product-card__prices">
                 <span class="product-card__price">${formatPrice(p.price_fcfa)}</span>
                 ${oldPrice}
               </div>
               <div class="product-card__actions">
-                <!-- Bouton isolé -->
                 <button class="btn btn--primary" onclick="window.addToCartQuick('${p.id}', '${p.name}', ${p.price_fcfa}, '${img}', '${p.shops?.name || 'Boutique'}')">Ajouter</button>
               </div>
             </div>
@@ -164,12 +187,22 @@
       }).join('');
     }
 
+    // Événements
     searchInput.addEventListener('input', renderGrid);
     sortSelect.addEventListener('change', renderGrid);
 
+    filtersScroll.addEventListener('click', (e) => {
+      if (e.target.classList.contains('filter-pill')) {
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('is-active'));
+        e.target.classList.add('is-active');
+        currentCategory = e.target.dataset.id;
+        renderGrid();
+      }
+    });
+
     loadShop();
 
-    // FONCTION D'AJOUT RAPIDE + TOAST
+    // Fonction d'ajout rapide au panier
     window.addToCartQuick = function(id, name, price, image, shop) {
       let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
       const uniqueId = `${id}-Défaut-Défaut`;
@@ -197,7 +230,6 @@
         badge.classList.add('is-visible');
       }
 
-      // Affichage du message Toast
       const toast = document.getElementById('toast');
       toast.style.visibility = 'visible';
       toast.style.opacity = '1';
