@@ -223,26 +223,29 @@
       else alert("Statut de la commande mis à jour !");
     };
 
-    // FONCTION CORRIGÉE POUR LE STOCK
+    // FONCTION CORRIGÉE POUR LE STOCK (Utilisation de l'ID de commande formaté)
     window.validatePayment = async function(orderId, btn) {
       btn.textContent = '...'; 
       btn.disabled = true;
       const sb = await initSupabase();
       
       try {
-        // 1. Récupérer le numéro de commande
-        const { data: order } = await sb.from('orders').select('order_number').eq('id', orderId).single();
-        const orderNum = order ? order.order_number : orderId;
-
-        // 2. Récupérer les articles de la commande
-        const { data: orderItems, error: itemsError } = await sb.from('order_items').select('product_id, quantity').eq('order_id', orderId);
+        // 1. Récupérer les articles de la commande via l'ID
+        // On vérifie que l'ID est bien un UUID valide
+        const { data: orderItems, error: itemsError } = await sb
+          .from('order_items')
+          .select('product_id, quantity, product_name')
+          .eq('order_id', orderId);
 
         if (itemsError) throw new Error("Erreur lecture articles: " + itemsError.message);
-        if (!orderItems || orderItems.length === 0) throw new Error(`Aucun article trouvé pour la commande ${orderNum}.`);
+        
+        if (!orderItems || orderItems.length === 0) {
+          throw new Error(`Aucun article trouvé pour cette commande. (ID: ${orderId})`);
+        }
 
-        let msg = "Commande " + orderNum + " :\n";
+        let msg = "Succès ! Articles traités :\n";
 
-        // 3. Décrémenter le stock
+        // 2. Décrémenter le stock
         for (const item of orderItems) {
           const { data: prod, error: prodError } = await sb.from('products').select('quantity, name').eq('id', item.product_id).single();
           
@@ -250,18 +253,18 @@
           
           if (prod) {
             const newQty = prod.quantity - item.quantity;
-            msg += `${prod.name} : ${prod.quantity} -> ${newQty < 0 ? 0 : newQty}\n`;
+            msg += `- ${prod.name} : ${prod.quantity} -> ${newQty < 0 ? 0 : newQty}\n`;
             
             const { error: updateError } = await sb.from('products').update({ quantity: newQty < 0 ? 0 : newQty }).eq('id', item.product_id);
             if (updateError) throw new Error("Erreur mise à jour stock: " + updateError.message);
           }
         }
 
-        // 4. Valider le paiement
+        // 3. Valider le paiement de la commande
         const { error: orderError } = await sb.from('orders').update({ payment_status: 'paid' }).eq('id', orderId);
         if (orderError) throw new Error("Erreur validation paiement: " + orderError.message);
 
-        alert("SUCCÈS !\n" + msg);
+        alert(msg);
         window.location.reload();
 
       } catch (error) {
