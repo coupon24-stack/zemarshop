@@ -71,7 +71,9 @@
         <h2>Explorer par catégorie</h2>
         <a href="./shop.html#categories" class="link-arrow">Tout voir (12) →</a>
       </header>
-      <div class="categories__scroll" id="categoriesGrid"></div>
+      <div class="categories__scroll" id="categoriesGrid">
+        <!-- Les catégories seront injectées ici -->
+      </div>
     </div>
   </section>
 
@@ -147,12 +149,13 @@
   <script type="module">
     import { renderNavbar } from './js/ui/navbar.js';
     import { renderFooter } from './js/ui/footer.js';
-    import { initSupabase, getCategories } from './js/supabase-client.js';
+    import { initSupabase } from './js/supabase-client.js';
     import { formatPrice, discountPercent, primaryImage } from './js/utils/format.js';
 
     renderNavbar('home');
     renderFooter();
 
+    // On initialise Supabase une seule fois
     const sb = await initSupabase();
 
     // 1. RECHERCHE
@@ -162,13 +165,29 @@
       if (query) window.location.href = `./shop.html?q=${encodeURIComponent(query)}`;
     });
 
-    // 2. CATÉGORIES
+    // 2. CHARGEMENT DES CATÉGORIES (Corrigé)
     async function loadCategories() {
       const container = document.getElementById('categoriesGrid');
-      const categories = await getCategories();
-      if (!categories) return;
+      if (!container) return;
+
+      // On interroge directement Supabase pour être sûr
+      const { data: categories, error } = await sb
+        .from('categories')
+        .select('*')
+        .order('name');
+
+      if (error) {
+        console.error("Erreur catégories:", error);
+        return;
+      }
+
+      if (!categories || categories.length === 0) {
+        container.innerHTML = '<p style="color: gray;">Aucune catégorie trouvée.</p>';
+        return;
+      }
+
       container.innerHTML = categories.map(cat => `
-        <a href="./shop.html?category=${cat.slug}" class="category-card">
+        <a href="./shop.html?category=${cat.slug || cat.name}" class="category-card">
           <span class="category-card__icon">${cat.icon || '📦'}</span>
           <span class="category-card__name">${cat.name}</span>
         </a>
@@ -229,9 +248,6 @@
       newGrid.innerHTML = products.slice(-4).map(createProductCard).join('');
     }
 
-    loadCategories();
-    loadProducts();
-
     // 4. FONCTION D'AJOUT RAPIDE AU PANIER + TOAST
     window.addToCartQuick = function(id, name, price, image, shop) {
       let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
@@ -269,6 +285,10 @@
         toast.style.opacity = '0';
       }, 3000);
     };
+
+    // LANCEMENT
+    loadCategories();
+    loadProducts();
   </script>
 </body>
 </html>
