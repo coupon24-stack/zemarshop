@@ -27,7 +27,6 @@
       Retour
     </button>
 
-    <!-- BOUTON PARTAGER -->
     <button onclick="shareProduct()" 
             style="display: inline-flex; align-items: center; gap: 8px; background: none; border: none; color: var(--color-primary); font-size: 14px; font-weight: 600; cursor: pointer; padding: 0;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -61,6 +60,9 @@
         <span class="price-old" id="productOldPrice"></span>
         <span class="badge badge--discount" id="productDiscount" style="display:none;"></span>
       </div>
+
+      <!-- AFFICHAGE DU STOCK -->
+      <p id="productStock" style="font-size: 14px; font-weight: 600; margin: 12px 0; color: var(--color-success);">Chargement du stock...</p>
 
       <p class="product-info__desc" id="productDesc">Chargement...</p>
 
@@ -100,12 +102,10 @@
     </div>
   </main>
 
-  <!-- NOUVELLE SECTION : AVIS CLIENTS -->
   <section class="section section--alt">
     <div class="container" style="max-width: 800px;">
       <h2 style="font-size: 22px; margin-bottom: 24px;">Avis clients</h2>
 
-      <!-- Formulaire d'avis BLOQUÉ -->
       <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm); margin-bottom: 32px; text-align: center;">
         <div style="font-size: 32px; margin-bottom: 12px;">🔒</div>
         <h3 style="font-size: 16px; margin-bottom: 8px;">Vous avez acheté ce produit ?</h3>
@@ -116,7 +116,6 @@
         <a href="./login.html" class="btn btn--primary btn--sm">Se connecter pour donner un avis</a>
       </div>
 
-      <!-- Liste des avis -->
       <div id="reviewsList">
         <p style="color: var(--color-text-soft);">Chargement des avis...</p>
       </div>
@@ -149,7 +148,7 @@
 
       const { data, error } = await sb
         .from('products')
-        .select(`id, name, description, price_fcfa, old_price_fcfa, image_url, variant_type, shops ( name )`)
+        .select(`id, name, description, price_fcfa, old_price_fcfa, image_url, quantity, variant_type, shops ( name )`)
         .eq('id', productId)
         .single();
 
@@ -176,6 +175,24 @@
         document.getElementById('productDiscount').style.display = 'inline-flex';
       }
 
+      // GESTION DU STOCK
+      const stockEl = document.getElementById('productStock');
+      if (product.quantity > 0) {
+        stockEl.textContent = `En stock : ${product.quantity} unités`;
+        stockEl.style.color = 'var(--color-success)';
+      } else {
+        stockEl.textContent = "Rupture de stock";
+        stockEl.style.color = 'var(--color-danger)';
+        
+        document.getElementById('btnAddToCart').disabled = true;
+        document.getElementById('btnAddToCart').textContent = "Rupture de stock";
+        document.getElementById('btnAddToCart').style.opacity = '0.5';
+        document.getElementById('btnBuyNow').disabled = true;
+        document.getElementById('btnBuyNow').textContent = "Rupture de stock";
+        document.getElementById('btnBuyNow').style.opacity = '0.5';
+      }
+
+      // Variantes
       const type = product.variant_type || 'none';
       if (type !== 'none') document.getElementById('variantsContainer').style.display = 'flex';
       if (type === 'size' || type === 'size_color') document.getElementById('sizeGroup').style.display = 'block';
@@ -186,18 +203,11 @@
       content.style.visibility = 'visible';
       content.style.opacity = '1';
 
-      // Charger les avis
       loadReviews(productId);
     }
 
-    // --- GESTION DE L'AFFICHAGE DES AVIS ---
     async function loadReviews(productId) {
-      const { data: reviews, error } = await sb
-        .from('reviews')
-        .select('*')
-        .eq('product_id', productId)
-        .order('created_at', { ascending: false });
-
+      const { data: reviews, error } = await sb.from('reviews').select('*').eq('product_id', productId).order('created_at', { ascending: false });
       const list = document.getElementById('reviewsList');
       
       if (error || !reviews || reviews.length === 0) {
@@ -220,22 +230,12 @@
       }).join('');
     }
 
-    // --- PARTAGE ---
     window.shareProduct = function() {
-      const shareData = {
-        title: product ? product.name : 'ZemarShop',
-        text: 'Regarde ce produit sur ZemarShop !',
-        url: window.location.href
-      };
-
-      if (navigator.share) {
-        navigator.share(shareData).catch(console.error);
-      } else {
-        alert("Copiez ce lien pour partager : " + window.location.href);
-      }
+      const shareData = { title: product ? product.name : 'ZemarShop', text: 'Regarde ce produit sur ZemarShop !', url: window.location.href };
+      if (navigator.share) navigator.share(shareData).catch(console.error);
+      else alert("Copiez ce lien pour partager : " + window.location.href);
     };
 
-    // --- VARIANTES & PANIER ---
     let selectedColor = 'Défaut';
     let selectedSize = 'Défaut';
 
@@ -253,10 +253,22 @@
 
     function addToCart() {
       if (!product) return;
+      
+      if (product.quantity <= 0) {
+        alert("Désolé, ce produit est en rupture de stock.");
+        return;
+      }
+
       let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
       const uniqueId = `${product.id}-${selectedColor}-${selectedSize}`;
-      
       const existingItem = cart.find(item => item.uniqueId === uniqueId);
+      const currentQtyInCart = existingItem ? existingItem.quantity : 0;
+      
+      if (currentQtyInCart >= product.quantity) {
+        alert(`Désolé, il ne reste que ${product.quantity} unité(s) en stock.`);
+        return;
+      }
+
       if (existingItem) {
         existingItem.quantity += 1;
       } else {
@@ -272,11 +284,7 @@
       localStorage.setItem('zemar_cart_count', totalItems);
       
       const badge = document.getElementById('cartCount');
-      if (badge) {
-        badge.textContent = totalItems;
-        badge.style.display = 'flex';
-        badge.classList.add('is-visible');
-      }
+      if (badge) { badge.textContent = totalItems; badge.style.display = 'flex'; badge.classList.add('is-visible'); }
     }
 
     document.getElementById('btnAddToCart').addEventListener('click', function(e) {
@@ -284,15 +292,8 @@
       addToCart();
       const originalText = btn.innerHTML;
       btn.innerHTML = '✓ Ajouté !';
-      btn.style.backgroundColor = '#16A34A'; 
-      btn.style.color = '#fff';
-      btn.style.borderColor = '#16A34A';
-      setTimeout(() => {
-        btn.innerHTML = originalText;
-        btn.style.backgroundColor = '';
-        btn.style.color = '';
-        btn.style.borderColor = '';
-      }, 2000);
+      btn.style.backgroundColor = '#16A34A'; btn.style.color = '#fff'; btn.style.borderColor = '#16A34A';
+      setTimeout(() => { btn.innerHTML = originalText; btn.style.backgroundColor = ''; btn.style.color = ''; btn.style.borderColor = ''; }, 2000);
     });
 
     document.getElementById('btnBuyNow').addEventListener('click', function() {
