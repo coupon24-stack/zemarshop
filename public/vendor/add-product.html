@@ -43,6 +43,18 @@
           </select>
         </div>
 
+        <!-- NOUVEAU : Type de variante -->
+        <div class="field" style="margin-top: 16px;">
+          <label class="field__label">Type de variantes du produit</label>
+          <select class="field__select" id="productVariantType" required>
+            <option value="none">Aucune variante (Produit simple)</option>
+            <option value="size">Tailles uniquement (ex: S, M, L)</option>
+            <option value="color">Couleurs uniquement (ex: Rouge, Bleu)</option>
+            <option value="size_color">Tailles ET Couleurs (ex: T-shirt)</option>
+            <option value="weight">Poids uniquement (ex: 500g, 1kg)</option>
+          </select>
+        </div>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
           <div class="field">
             <label class="field__label">Prix de vente (FCFA)</label>
@@ -59,16 +71,22 @@
           <input type="number" class="field__input" id="productQuantity" placeholder="Ex: 10" required min="1" />
         </div>
 
-        <!-- LE CHAMP IMAGE EST DEVENU UN INPUT DE TYPE FILE -->
         <div class="field" style="margin-top: 16px;">
-          <label class="field__label">Photo du produit</label>
+          <label class="field__label">Photo principale du produit</label>
           <input type="file" class="field__input" id="productImageFile" accept="image/*" required style="padding: 8px;" />
-          <small style="color: var(--color-text-muted); font-size: 12px; margin-top: 4px;">Choisissez une photo depuis votre galerie.</small>
         </div>
 
         <div class="field" style="margin-top: 16px;">
           <label class="field__label">Description du produit</label>
           <textarea class="field__textarea" id="productDescription" placeholder="Décrivez votre produit en détail..." required></textarea>
+        </div>
+
+        <div class="alert alert--info" style="margin-top: 24px;">
+          <span>ℹ️</span>
+          <div>
+            <strong>Validation requise</strong><br>
+            Votre produit sera examiné par un administrateur avant d'être mis en ligne.
+          </div>
         </div>
 
         <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit" style="margin-top: 24px;">
@@ -100,8 +118,7 @@
         return;
       }
 
-      // Charger les catégories
-      const { data: categories, error } = await supabase.from('categories').select('*').order('name');
+      const { data: categories } = await supabase.from('categories').select('*').order('name');
       const select = document.getElementById('productCategory');
       select.innerHTML = '<option value="">Sélectionnez une catégorie</option>';
       
@@ -112,8 +129,6 @@
           option.textContent = cat.name;
           select.appendChild(option);
         });
-      } else {
-        console.error(error);
       }
     }
 
@@ -128,20 +143,17 @@
       try {
         let imageUrl = null;
 
-        // 1. Upload de l'image si un fichier est sélectionné
         if (fileInput.files.length > 0) {
           const file = fileInput.files[0];
           const fileExt = file.name.split('.').pop();
-          const fileName = `${Date.now()}.${fileExt}`; // Nom unique basé sur le temps
+          const fileName = `${Date.now()}.${fileExt}`;
 
-          // Envoi du fichier vers le bucket 'product-images'
           const { error: uploadError } = await supabase.storage
             .from('product-images')
             .upload(fileName, file);
 
           if (uploadError) throw uploadError;
 
-          // Récupération du lien public de l'image
           const { data: urlData } = supabase.storage
             .from('product-images')
             .getPublicUrl(fileName);
@@ -149,7 +161,6 @@
           imageUrl = urlData.publicUrl;
         }
 
-        // 2. Préparation des données du produit
         const newProduct = {
           shop_id: TEST_SHOP_ID,
           category_id: document.getElementById('productCategory').value,
@@ -159,10 +170,10 @@
           quantity: parseInt(document.getElementById('productQuantity').value, 10),
           image_url: imageUrl,
           description: document.getElementById('productDescription').value,
+          variant_type: document.getElementById('productVariantType').value, // Nouveau champ
           status: 'approved'
         };
 
-        // 3. Insertion dans la base de données
         const { error: insertError } = await supabase.from('products').insert([newProduct]);
         if (insertError) throw insertError;
 
