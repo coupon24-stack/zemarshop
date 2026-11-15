@@ -43,7 +43,6 @@
           </select>
         </div>
 
-        <!-- NOUVEAU : Type de variante -->
         <div class="field" style="margin-top: 16px;">
           <label class="field__label">Type de variantes du produit</label>
           <select class="field__select" id="productVariantType" required>
@@ -108,8 +107,8 @@
     renderNavbar('vendor');
     renderFooter();
 
-    const TEST_SHOP_ID = '00000000-0000-0000-0000-000000000002';
     let supabase;
+    let currentShopId = null; // On va stocker l'ID de la vraie boutique ici
 
     async function init() {
       supabase = await initSupabase();
@@ -118,6 +117,29 @@
         return;
       }
 
+      // 1. Vérifier la session utilisateur
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      // 2. Récupérer l'ID de SA boutique
+      const { data: shop } = await supabase
+        .from('shops')
+        .select('id')
+        .eq('owner_id', session.user.id)
+        .single();
+
+      if (!shop) {
+        alert("Erreur : Vous n'avez pas de boutique.");
+        window.location.href = './dashboard.html';
+        return;
+      }
+
+      currentShopId = shop.id;
+
+      // 3. Charger les catégories dans le menu déroulant
       const { data: categories } = await supabase.from('categories').select('*').order('name');
       const select = document.getElementById('productCategory');
       select.innerHTML = '<option value="">Sélectionnez une catégorie</option>';
@@ -132,6 +154,7 @@
       }
     }
 
+    // 4. Gestion de la soumission du formulaire
     document.getElementById('addProductForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('btnSubmit');
@@ -162,7 +185,7 @@
         }
 
         const newProduct = {
-          shop_id: TEST_SHOP_ID,
+          shop_id: currentShopId, // <-- Utilisation de la VRAIE boutique
           category_id: document.getElementById('productCategory').value,
           name: document.getElementById('productName').value,
           price_fcfa: parseFloat(document.getElementById('productPrice').value),
@@ -170,14 +193,14 @@
           quantity: parseInt(document.getElementById('productQuantity').value, 10),
           image_url: imageUrl,
           description: document.getElementById('productDescription').value,
-          variant_type: document.getElementById('productVariantType').value, // Nouveau champ
-          status: 'approved'
+          variant_type: document.getElementById('productVariantType').value,
+          status: 'pending' // Le produit doit être validé par l'admin
         };
 
         const { error: insertError } = await supabase.from('products').insert([newProduct]);
         if (insertError) throw insertError;
 
-        alert("Produit ajouté avec succès !");
+        alert("Produit ajouté avec succès ! Il est en attente de validation.");
         window.location.href = './dashboard.html';
 
       } catch (error) {
