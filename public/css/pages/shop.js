@@ -2,178 +2,138 @@
 
 import { renderNavbar } from '../ui/navbar.js';
 import { renderFooter } from '../ui/footer.js';
-import { getCategories, getAllProducts } from '../supabase-client.js';
+import { initSupabase, getCategories } from '../supabase-client.js';
 import { formatPrice, discountPercent, primaryImage } from '../utils/format.js';
 
-// --- État de la page ---
+renderNavbar('shop');
+renderFooter();
+
 let allProducts = [];
-let currentCategory = 'all';
 let currentSearch = '';
 let currentSort = 'new';
+let currentCategory = 'all';
 
-// --- Éléments DOM ---
 const shopGrid = document.getElementById('shopGrid');
 const noResults = document.getElementById('noResults');
-const filtersScroll = document.getElementById('filtersScroll');
 const searchInput = document.getElementById('searchInput');
 const sortSelect = document.getElementById('sortSelect');
+const filtersScroll = document.getElementById('filtersScroll');
+const searchFormShop = document.getElementById('searchFormShop');
 
-// --- Initialisation ---
 async function init() {
-  renderNavbar('shop');
-  renderFooter();
+  const sb = await initSupabase();
+  
+  // 1. Charger les produits depuis Supabase
+  const { data, error } = await sb
+    .from('products')
+    .select(`id, name, price_fcfa, old_price_fcfa, image_url, category_id, shops ( name )`)
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false });
 
-  // 1. On charge TOUS les produits
-  allProducts = await getAllProducts();
+  if (!error && data) allProducts = data;
 
-  // 2. On charge les catégories (filtres)
-  await loadCategories();
+  // 2. Charger les catégories
+  const categories = await getCategories();
+  
+  // Bouton "Tout voir"
+  const allBtn = document.createElement('button');
+  allBtn.className = 'filter-pill is-active';
+  allBtn.textContent = 'Tout voir';
+  allBtn.dataset.id = 'all';
+  filtersScroll.appendChild(allBtn);
 
-  // 3. On vérifie si on vient d'une recherche (depuis l'accueil)
-  handleSearchFromUrl();
-
-  // 4. On affiche la grille
-  applyFilters();
-}
-
-// --- Chargement des catégories ---
-async function loadCategories() {
-  try {
-    const categories = await getCategories();
-    
-    const allBtn = document.createElement('button');
-    allBtn.className = 'filter-pill is-active';
-    allBtn.textContent = 'Tout voir';
-    allBtn.dataset.id = 'all';
-    allBtn.onclick = () => selectCategory('all', allBtn);
-    filtersScroll.appendChild(allBtn);
-
+  if (categories) {
     categories.forEach(cat => {
       const btn = document.createElement('button');
       btn.className = 'filter-pill';
       btn.textContent = cat.name;
-      btn.dataset.id = cat.id.toString();
-      btn.dataset.slug = cat.slug;
-      btn.onclick = () => selectCategory(cat.id.toString(), btn);
+      btn.dataset.id = cat.id;
       filtersScroll.appendChild(btn);
     });
-  } catch (error) {
-    console.error(error);
   }
+
+  // 3. Lire les paramètres de l'URL (recherche depuis l'accueil)
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('q')) {
+    currentSearch = params.get('q');
+    searchInput.value = currentSearch;
+  }
+
+  // 4. PREMIER AFFICHAGE (C'est ce qui manquait !)
+  renderGrid();
 }
 
-// --- Sélection d'une catégorie ---
-function selectCategory(catId, btnElement) {
-  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('is-active'));
-  btnElement.classList.add('is-active');
-  currentCategory = catId;
-  applyFilters();
-}
-
-// --- Application des filtres ---
-function applyFilters() {
+function renderGrid() {
   let filtered = allProducts.filter(p => {
-    // Filtre catégorie (démo)
-    if (currentCategory !== 'all') {
-      const productNum = parseInt(p.id.replace('p', ''), 10);
-      if (productNum % 2 !== parseInt(currentCategory, 10) % 2) return false;
-    }
-    // Filtre recherche (insensible à la casse)
-    if (currentSearch) {
-      const q = currentSearch.toLowerCase().trim();
-      if (!p.name.toLowerCase().includes(q)) return false;
-    }
+    // Filtre recherche
+    if (currentSearch && !p.name.toLowerCase().includes(currentSearch.toLowerCase())) return false;
+    // Filtre catégorie
+    if (currentCategory !== 'all' && p.category_id !== currentCategory) return false;
     return true;
   });
 
   // Tri
-  filtered.sort((a, b) => {
-    if (currentSort === 'price_asc') return a.price_fcfa - b.price_fcfa;
-    if (currentSort === 'price_desc') return b.price_fcfa - a.price_fcfa;
-    return 0;
-  });
+  if (currentSort === 'price_asc') filtered.sort((a,b) => a.price_fcfa - b.price_fcfa);
+  if (currentSort === 'price_desc') filtered.sort((a,b) => b.price_fcfa - a.price_fcfa);
 
-  renderGrid(filtered);
-}
-
-// --- Affichage de la grille ---
-function renderGrid(products) {
-  if (products.length === 0) {
+  // Affichage
+  if (filtered.length === 0) {
     shopGrid.innerHTML = '';
     noResults.classList.remove('hidden');
   } else {
     noResults.classList.add('hidden');
-    shopGrid.innerHTML = products.map(createProductCard).join('');
+    shopGrid.innerHTML = filtered.map(p => {
+      const discount = discountPercent(p.price_fcfa, p.old_price_fcfa);
+      const badge = discount ? `<span class="badge badge--discount">-${discount}%</span>` : '';
+      const oldPrice = p.old_price_fcfa ? `<span class="product-card__old-price">${formatPrice(p.old_price_fcfa)}</span>` : '';
+      const img = primaryImage(p);
+      
+      return `
+        <article class="product-card" onclick="window.location.href='./product.html?id=${p.id}'" style="cursor: pointer;">
+          <div class="product-card__image-wrap">
+            <img class="product-card__image" src="${img}" alt="${p.name}" loading="lazy" />
+            <div class="product-card__badges">${badge}</div>
+          </div>
+          <div class="product-card__body">
+            <div class="product-card__shop">${p.shops?.name || 'Boutique'}</div>
+            <h3 class="product-card__name">${p.name}</h3>
+            <div class="product-card__prices">
+              <span class="product-card__price">${formatPrice(p.price_fcfa)}</span>
+              ${oldPrice}
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
   }
 }
 
-// --- Composant Carte Produit ---
-function createProductCard(product) {
-  const img = primaryImage(product);
-  const discount = discountPercent(product.price_fcfa, product.old_price_fcfa);
-  const oldPriceHtml = product.old_price_fcfa ? `<span class="product-card__old-price">${formatPrice(product.old_price_fcfa)}</span>` : '';
-  const discountBadge = discount ? `<span class="badge badge--discount">-${discount}%</span>` : '';
-  const shopName = product.shops?.name || 'Boutique Zemar';
+// --- ÉVÉNEMENTS ---
+searchInput.addEventListener('input', (e) => { 
+  currentSearch = e.target.value; 
+  renderGrid(); 
+});
 
-  return `
-    <article class="product-card" onclick="window.location.href='./product.html?id=${product.id}'" style="cursor: pointer;">
-      <div class="product-card__image-wrap">
-        <img class="product-card__image" src="${img}" alt="${product.name}" loading="lazy" />
-        <div class="product-card__badges">${discountBadge}</div>
-        <button class="product-card__favorite" aria-label="Favori">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-        </button>
-      </div>
-      <div class="product-card__body">
-        <div class="product-card__shop">${shopName}</div>
-        <h3 class="product-card__name">${product.name}</h3>
-        <div class="product-card__prices">
-          <span class="product-card__price">${formatPrice(product.price_fcfa)}</span>
-          ${oldPriceHtml}
-        </div>
-        <div class="product-card__actions">
-          <button class="btn btn--primary">Voir le produit</button>
-        </div>
-      </div>
-    </article>
-  `;
-}
+sortSelect.addEventListener('change', (e) => { 
+  currentSort = e.target.value; 
+  renderGrid(); 
+});
 
-// --- Écouteurs d'événements ---
-if (searchInput) {
-  searchInput.addEventListener('input', (e) => {
-    currentSearch = e.target.value;
-    applyFilters();
-  });
-}
-
-if (sortSelect) {
-  sortSelect.addEventListener('change', (e) => {
-    currentSort = e.target.value;
-    applyFilters();
-  });
-}
-
-// --- GESTION DE LA RECHERCHE DEPUIS L'URL ---
-function handleSearchFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  const searchQuery = params.get('q');
-  const catParam = params.get('category');
-
-  if (searchQuery) {
-    currentSearch = searchQuery;
-    if (searchInput) searchInput.value = searchQuery;
+filtersScroll.addEventListener('click', (e) => {
+  if (e.target.classList.contains('filter-pill')) {
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('is-active'));
+    e.target.classList.add('is-active');
+    currentCategory = e.target.dataset.id;
+    renderGrid();
   }
+});
 
-  if (catParam) {
-    setTimeout(() => {
-      const btn = document.querySelector(`.filter-pill[data-slug="${catParam}"]`);
-      if (btn) btn.click();
-    }, 100);
-  }
-}
+// Bloquer le rechargement du formulaire de recherche
+searchFormShop.addEventListener('submit', (e) => {
+  e.preventDefault();
+  currentSearch = searchInput.value;
+  renderGrid();
+});
 
-// --- Lancer l'application ---
+// Lancer l'application
 init();
