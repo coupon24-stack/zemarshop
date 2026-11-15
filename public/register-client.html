@@ -4,40 +4,129 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Créer un compte — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="./css/main.css" />
   <link rel="stylesheet" href="./css/components.css" />
   <link rel="stylesheet" href="./css/pages/home.css" />
   <link rel="stylesheet" href="./css/pages/auth.css" />
 </head>
 <body style="background-color: var(--color-bg-alt);">
+
   <header class="navbar" id="navbar"></header>
+
   <main class="auth-page container">
     <div class="auth-card">
+      
       <div class="auth-header">
         <h1>Créer un compte</h1>
         <p>Rejoignez ZemarShop en quelques secondes.</p>
       </div>
-      <form id="registerForm" onsubmit="event.preventDefault();">
-        <div class="field"><label class="field__label">Nom complet</label><input type="text" class="field__input" placeholder="Ex: Koffi Yao" required /></div>
-        <div class="field"><label class="field__label">Adresse e-mail</label><input type="email" class="field__input" placeholder="votre@email.com" required /></div>
-        <div class="field"><label class="field__label">Numéro de téléphone</label><input type="tel" class="field__input" placeholder="Ex: 0700000000" required /></div>
-        <div class="field"><label class="field__label">Mot de passe</label><input type="password" class="field__input" placeholder="••••••••" required /></div>
-        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit">Créer mon compte</button>
+
+      <form id="registerForm">
+        
+        <div class="field">
+          <label class="field__label">Nom complet</label>
+          <input type="text" class="field__input" id="fullName" placeholder="Ex: Koffi Yao" required />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Adresse e-mail</label>
+          <input type="email" class="field__input" id="email" placeholder="votre@email.com" required />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Numéro de téléphone</label>
+          <input type="tel" class="field__input" id="phone" placeholder="Ex: 0700000000" required />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Mot de passe</label>
+          <input type="password" class="field__input" id="password" placeholder="••••••••" required minlength="6" />
+        </div>
+
+        <div id="errorMsg" style="display: none; color: var(--color-danger); font-size: 14px; text-align: center; margin-top: 16px;"></div>
+
+        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit" style="margin-top: 16px;">
+          Créer mon compte
+        </button>
+
       </form>
-      <div class="auth-footer"><p>Vous avez déjà un compte ? <a href="./login.html">Se connecter</a></p></div>
+
+      <div class="auth-footer">
+        <p>Vous avez déjà un compte ? <a href="./login.html">Se connecter</a></p>
+      </div>
+
     </div>
   </main>
+
   <footer class="footer" id="footer"></footer>
+
   <script type="module">
     import { renderNavbar } from './js/ui/navbar.js';
     import { renderFooter } from './js/ui/footer.js';
-    renderNavbar('register'); renderFooter();
-    document.getElementById('registerForm').addEventListener('submit', (e) => {
+    import { initSupabase } from './js/supabase-client.js';
+
+    renderNavbar('register');
+    renderFooter();
+
+    const sb = await initSupabase();
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
       const btn = document.getElementById('btnSubmit');
-      btn.textContent = 'Création en cours...'; btn.disabled = true;
-      setTimeout(() => { window.location.href = './index.html'; }, 1000);
+      const errorEl = document.getElementById('errorMsg');
+      
+      const fullName = document.getElementById('fullName').value;
+      const email = document.getElementById('email').value;
+      const phone = document.getElementById('phone').value;
+      const password = document.getElementById('password').value;
+
+      btn.textContent = 'Création en cours...';
+      btn.disabled = true;
+      errorEl.style.display = 'none';
+
+      // 1. Création de l'utilisateur (Auth)
+      const { data: authData, error: authError } = await sb.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: { full_name: fullName }
+        }
+      });
+
+      if (authError) {
+        errorEl.textContent = "Erreur : " + authError.message;
+        errorEl.style.display = 'block';
+        btn.textContent = 'Créer mon compte';
+        btn.disabled = false;
+        return;
+      }
+
+      // 2. Création du profil dans la table 'profiles'
+      if (authData.user) {
+        const { error: profileError } = await sb.from('profiles').insert([
+          {
+            id: authData.user.id,
+            role: 'client',
+            full_name: fullName,
+            email: email,
+            phone: phone
+          }
+        ]);
+
+        if (profileError) {
+          console.error(profileError);
+          // Si le profil existe déjà (ce qui peut arriver si le trigger automatique a fonctionné), on ignore
+        }
+      }
+
+      // 3. Redirection
+      window.location.href = './client/dashboard.html';
     });
   </script>
 </body>
