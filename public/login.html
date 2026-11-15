@@ -26,8 +26,8 @@
         <p>Content de vous revoir sur ZemarShop !</p>
       </div>
 
-      <!-- Message d'erreur global -->
-      <div id="globalError" style="display: none; background: #FEE2E2; color: #DC2626; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; text-align: center; font-weight: bold;"></div>
+      <!-- Zone de message (jaune pour le test) -->
+      <div id="globalError" style="display: none; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; text-align: center; font-weight: bold;"></div>
 
       <form id="loginForm">
         
@@ -85,6 +85,8 @@
       });
 
       if (authError) {
+        errorEl.style.background = '#FEE2E2';
+        errorEl.style.color = '#DC2626';
         errorEl.textContent = "Erreur : " + authError.message;
         errorEl.style.display = 'block';
         btn.textContent = 'Se connecter';
@@ -100,18 +102,25 @@
         .single();
 
       if (profileError || !profile) {
-        errorEl.textContent = "Profil introuvable : " + (profileError ? profileError.message : "Aucun profil associé.");
+        errorEl.style.background = '#FEE2E2';
+        errorEl.style.color = '#DC2626';
+        errorEl.textContent = "Profil introuvable : " + (profileError ? profileError.message : "Aucun profil.");
         errorEl.style.display = 'block';
         btn.textContent = 'Se connecter';
         btn.disabled = false;
         return;
       }
 
-      // --- TEST DE DÉBOGAGE (S'affiche avant la redirection) ---
-      alert("Rôle détecté dans la base : " + profile.role);
-      // ---------------------------------------------------------
+      // --- TEST VISUEL : On affiche le rôle en jaune ---
+      errorEl.style.background = 'yellow';
+      errorEl.style.color = 'black';
+      errorEl.textContent = "Rôle détecté : " + profile.role;
+      errorEl.style.display = 'block';
+      
+      // On attend 3 secondes pour que tu puisses lire
+      await new Promise(r => setTimeout(r, 3000));
 
-      // 3. Redirection stricte
+      // 3. Redirection
       if (profile.role === 'admin') {
         window.location.href = './admin/dashboard.html';
       } else if (profile.role === 'vendor') {
