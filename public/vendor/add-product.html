@@ -29,57 +29,46 @@
         <p>Publiez un nouvel article dans votre boutique.</p>
       </div>
 
-      <form id="addProductForm" onsubmit="event.preventDefault();">
+      <form id="addProductForm">
         
         <div class="field">
           <label class="field__label">Nom du produit</label>
-          <input type="text" class="field__input" placeholder="Ex: Robe africaine wax" required />
+          <input type="text" class="field__input" id="productName" placeholder="Ex: Robe africaine wax" required />
         </div>
 
         <div class="field" style="margin-top: 16px;">
           <label class="field__label">Catégorie</label>
-          <select class="field__select" required>
+          <select class="field__select" id="productCategory" required>
             <option value="">Sélectionnez une catégorie</option>
-            <option value="1">Mode homme</option>
-            <option value="2">Mode femme</option>
-            <option value="3">Chaussures</option>
-            <option value="4">Sacs & accessoires</option>
-            <option value="5">Beauté & soins</option>
-            <option value="6">Téléphones</option>
-            <option value="7">Informatique</option>
-            <option value="8">Électronique</option>
-            <option value="9">Maison & déco</option>
-            <option value="10">Sport</option>
-            <option value="11">Enfants</option>
-            <option value="12">Autres</option>
+            <!-- Les catégories seront chargées par JS -->
           </select>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
           <div class="field">
             <label class="field__label">Prix de vente (FCFA)</label>
-            <input type="number" class="field__input" placeholder="Ex: 15000" required min="100" />
+            <input type="number" class="field__input" id="productPrice" placeholder="Ex: 15000" required min="100" />
           </div>
           <div class="field">
             <label class="field__label">Ancien prix (facultatif)</label>
-            <input type="number" class="field__input" placeholder="Ex: 20000" />
+            <input type="number" class="field__input" id="productOldPrice" placeholder="Ex: 20000" />
           </div>
         </div>
 
         <div class="field" style="margin-top: 16px;">
           <label class="field__label">Quantité en stock</label>
-          <input type="number" class="field__input" placeholder="Ex: 10" required min="1" />
+          <input type="number" class="field__input" id="productQuantity" placeholder="Ex: 10" required min="1" />
         </div>
 
         <div class="field" style="margin-top: 16px;">
           <label class="field__label">Lien de l'image (URL)</label>
-          <input type="url" class="field__input" placeholder="https://exemple.com/image.jpg" required />
+          <input type="url" class="field__input" id="productImage" placeholder="https://exemple.com/image.jpg" required />
           <small style="color: var(--color-text-muted); font-size: 12px; margin-top: 4px;">Pour l'instant, collez un lien depuis Unsplash ou un autre site.</small>
         </div>
 
         <div class="field" style="margin-top: 16px;">
           <label class="field__label">Description du produit</label>
-          <textarea class="field__textarea" placeholder="Décrivez votre produit en détail..." required></textarea>
+          <textarea class="field__textarea" id="productDescription" placeholder="Décrivez votre produit en détail..." required></textarea>
         </div>
 
         <div class="alert alert--info" style="margin-top: 24px;">
@@ -104,23 +93,75 @@
   <script type="module">
     import { renderNavbar } from '../js/ui/navbar.js';
     import { renderFooter } from '../js/ui/footer.js';
+    import { initSupabase } from '../js/supabase-client.js';
 
     renderNavbar('vendor');
     renderFooter();
 
-    // Simulation de l'ajout de produit
-    document.getElementById('addProductForm').addEventListener('submit', (e) => {
+    // ID de la boutique de test qu'on a créée en SQL
+    const TEST_SHOP_ID = '00000000-0000-0000-0000-000000000002';
+
+    let supabase;
+
+    async function init() {
+      supabase = await initSupabase();
+      if (!supabase) {
+        alert("Erreur : impossible de se connecter à la base de données.");
+        return;
+      }
+
+      // Charger les catégories dans le menu déroulant
+      const { data: categories } = await supabase.from('categories').select('*').order('name');
+      const select = document.getElementById('productCategory');
+      
+      if (categories) {
+        categories.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.id;
+          option.textContent = cat.name;
+          select.appendChild(option);
+        });
+      }
+    }
+
+    // Gestion de la soumission du formulaire
+    document.getElementById('addProductForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('btnSubmit');
       
       btn.textContent = 'Publication en cours...';
       btn.disabled = true;
 
-      setTimeout(() => {
-        alert("Produit soumis avec succès ! Il est en attente de validation par l'administrateur.");
+      // Récupération des valeurs
+      const newProduct = {
+        shop_id: TEST_SHOP_ID,
+        category_id: document.getElementById('productCategory').value,
+        name: document.getElementById('productName').value,
+        price_fcfa: parseFloat(document.getElementById('productPrice').value),
+        old_price_fcfa: document.getElementById('productOldPrice').value ? parseFloat(document.getElementById('productOldPrice').value) : null,
+        quantity: parseInt(document.getElementById('productQuantity').value, 10),
+        image_url: document.getElementById('productImage').value,
+        description: document.getElementById('productDescription').value,
+        status: 'approved' // On met 'approved' pour que le produit s'affiche tout de suite (en attendant l'espace admin)
+      };
+
+      // Enregistrement dans Supabase
+      const { error } = await supabase
+        .from('products')
+        .insert([newProduct]);
+
+      if (error) {
+        console.error(error);
+        alert("Erreur lors de l'ajout du produit : " + error.message);
+        btn.textContent = 'Publier le produit';
+        btn.disabled = false;
+      } else {
+        alert("Produit ajouté avec succès ! Vous pouvez le voir sur la boutique.");
         window.location.href = './dashboard.html';
-      }, 1500);
+      }
     });
+
+    init();
   </script>
 </body>
-          </html>
+</html>
