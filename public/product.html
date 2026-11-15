@@ -36,8 +36,6 @@
       </div>
       <div class="product-gallery__thumbs">
         <div class="thumb is-active"><img id="thumb1" src="" alt="Miniature 1" /></div>
-        <div class="thumb"><img id="thumb2" src="" alt="Miniature 2" /></div>
-        <div class="thumb"><img id="thumb3" src="" alt="Miniature 3" /></div>
       </div>
     </div>
 
@@ -51,12 +49,13 @@
         <span class="badge badge--discount" id="productDiscount" style="display:none;"></span>
       </div>
 
-      <p class="product-info__desc" id="productDesc">
-        Chargement de la description...
-      </p>
+      <p class="product-info__desc" id="productDesc">Chargement...</p>
 
-      <div class="product-variants">
-        <div class="variant-group">
+      <!-- ZONE DES VARIANTES (Cachée par défaut) -->
+      <div class="product-variants" id="variantsContainer" style="display: none;">
+        
+        <!-- Couleur -->
+        <div class="variant-group" id="colorGroup" style="display: none;">
           <span class="variant-label">Couleur</span>
           <div class="variant-options" id="colorOptions">
             <button class="variant-btn is-active" style="background:#222" onclick="selectColor('Noir', this)"></button>
@@ -65,7 +64,8 @@
           </div>
         </div>
         
-        <div class="variant-group">
+        <!-- Taille -->
+        <div class="variant-group" id="sizeGroup" style="display: none;">
           <span class="variant-label">Taille</span>
           <div class="variant-options" id="sizeOptions">
             <button class="variant-btn is-active" onclick="selectSize('S', this)">S</button>
@@ -73,6 +73,17 @@
             <button class="variant-btn" onclick="selectSize('L', this)">L</button>
           </div>
         </div>
+
+        <!-- Poids -->
+        <div class="variant-group" id="weightGroup" style="display: none;">
+          <span class="variant-label">Poids</span>
+          <div class="variant-options" id="weightOptions">
+            <button class="variant-btn is-active" onclick="selectSize('500g', this)">500g</button>
+            <button class="variant-btn" onclick="selectSize('1kg', this)">1kg</button>
+            <button class="variant-btn" onclick="selectSize('2kg', this)">2kg</button>
+          </div>
+        </div>
+
       </div>
 
       <div class="product-actions">
@@ -105,29 +116,25 @@
         return;
       }
 
-      // ON CHERCHE LE PRODUIT DANS LA VRAIE BASE DE DONNÉES
+      // On récupère aussi le variant_type
       const { data, error } = await sb
         .from('products')
-        .select(`id, name, description, price_fcfa, old_price_fcfa, image_url, shops ( name )`)
+        .select(`id, name, description, price_fcfa, old_price_fcfa, image_url, variant_type, shops ( name )`)
         .eq('id', productId)
         .single();
 
       if (error || !data) {
-        console.error(error);
         document.getElementById('productTitle').textContent = "Produit introuvable";
-        document.getElementById('productDesc').textContent = "Désolé, ce produit n'existe pas ou n'est plus disponible.";
         return;
       }
 
       product = data;
 
-      // Remplissage de la page
+      // Remplissage de base
       const img = product.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600';
       
       document.getElementById('productImage').src = img;
       document.getElementById('thumb1').src = img;
-      document.getElementById('thumb2').src = img;
-      document.getElementById('thumb3').src = img;
       
       document.getElementById('productShop').textContent = product.shops?.name || 'Boutique Zemar';
       document.getElementById('productTitle').textContent = product.name;
@@ -139,20 +146,36 @@
         const discount = Math.round(((product.old_price_fcfa - product.price_fcfa) / product.old_price_fcfa) * 100);
         document.getElementById('productDiscount').textContent = `-${discount}%`;
         document.getElementById('productDiscount').style.display = 'inline-flex';
-      } else {
-        document.getElementById('productOldPrice').style.display = 'none';
-        document.getElementById('productDiscount').style.display = 'none';
       }
 
-      // Afficher la page une fois chargée
+      // GESTION DES VARIANTES
+      const type = product.variant_type || 'none';
+      
+      if (type !== 'none') {
+        document.getElementById('variantsContainer').style.display = 'flex';
+      }
+
+      if (type === 'size' || type === 'size_color') {
+        document.getElementById('sizeGroup').style.display = 'block';
+      }
+      
+      if (type === 'color' || type === 'size_color') {
+        document.getElementById('colorGroup').style.display = 'block';
+      }
+
+      if (type === 'weight') {
+        document.getElementById('weightGroup').style.display = 'block';
+      }
+
+      // Afficher la page
       const content = document.getElementById('productContent');
       content.style.visibility = 'visible';
       content.style.opacity = '1';
     }
 
-    // --- VARIABLES POUR LES CHOIX ---
-    let selectedColor = 'Noir';
-    let selectedSize = 'S';
+    // Variables
+    let selectedColor = 'Défaut';
+    let selectedSize = 'Défaut';
 
     window.selectColor = function(color, btn) {
       selectedColor = color;
@@ -162,7 +185,7 @@
 
     window.selectSize = function(size, btn) {
       selectedSize = size;
-      document.querySelectorAll('#sizeOptions .variant-btn').forEach(b => b.classList.remove('is-active'));
+      document.querySelectorAll('#sizeOptions .variant-btn, #weightOptions .variant-btn').forEach(b => b.classList.remove('is-active'));
       btn.classList.add('is-active');
     };
 
@@ -170,6 +193,7 @@
       if (!product) return;
       
       let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
+      // On inclut la couleur et la taille choisies (ou "Défaut")
       const uniqueId = `${product.id}-${selectedColor}-${selectedSize}`;
       
       const existingItem = cart.find(item => item.uniqueId === uniqueId);
@@ -198,7 +222,7 @@
       const badge = document.getElementById('cartCount');
       if (badge) {
         badge.textContent = totalItems;
-        badge.style.display = 'flex'; // <-- LIGNE AJOUTÉE POUR FORCER L'AFFICHAGE
+        badge.style.display = 'flex';
         badge.classList.add('is-visible');
       }
     }
@@ -229,4 +253,4 @@
     init();
   </script>
 </body>
-</html>
+              </html>
