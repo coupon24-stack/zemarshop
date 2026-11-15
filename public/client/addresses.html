@@ -4,16 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mes Adresses — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="../css/main.css" />
   <link rel="stylesheet" href="../css/components.css" />
   <link rel="stylesheet" href="../css/pages/home.css" />
   <link rel="stylesheet" href="../css/pages/client.css" />
 </head>
 <body style="background-color: var(--color-bg-alt);">
+
   <header class="navbar" id="navbar"></header>
+
   <main class="container section">
     <div class="client-layout">
+      
+      <!-- Menu de gauche -->
       <aside class="client-sidebar">
         <a href="./dashboard.html" class="client-nav-link">Tableau de bord</a>
         <a href="./orders.html" class="client-nav-link">Mes commandes</a>
@@ -23,21 +31,185 @@
         <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--color-border);">
         <a href="#" class="client-nav-link" id="btnLogout" style="color: var(--color-danger);">Déconnexion</a>
       </aside>
+
+      <!-- Contenu principal -->
       <div class="client-content">
-        <h2 class="section-title">Mes Adresses</h2>
-        <p style="color: var(--color-text-soft);">Vous n'avez pas encore enregistré d'adresse de livraison.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <h2 class="section-title" style="margin: 0;">Mes Adresses</h2>
+          <button class="btn btn--primary btn--sm" onclick="document.getElementById('addressForm').style.display='block'">➕ Ajouter une adresse</button>
+        </div>
+
+        <!-- Formulaire d'ajout (caché par défaut) -->
+        <div id="addressForm" style="display: none; background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm); margin-bottom: 24px;">
+          <form id="addAddressForm">
+            <h3 style="font-size: 16px; margin-bottom: 16px;">Nouvelle adresse</h3>
+            
+            <div class="field">
+              <label class="field__label">Libellé (ex: Maison, Bureau)</label>
+              <input type="text" class="field__input" id="addrLabel" placeholder="Ex: Maison" required />
+            </div>
+
+            <div class="field" style="margin-top: 12px;">
+              <label class="field__label">Nom complet</label>
+              <input type="text" class="field__input" id="addrName" placeholder="Ex: Koffi Yao" required />
+            </div>
+
+            <div class="field" style="margin-top: 12px;">
+              <label class="field__label">Numéro de téléphone</label>
+              <input type="tel" class="field__input" id="addrPhone" placeholder="Ex: 0700000000" required />
+            </div>
+
+            <div class="field" style="margin-top: 12px;">
+              <label class="field__label">Ville</label>
+              <input type="text" class="field__input" id="addrCity" placeholder="Ex: Abidjan" required />
+            </div>
+
+            <div class="field" style="margin-top: 12px;">
+              <label class="field__label">Commune</label>
+              <input type="text" class="field__input" id="addrCommune" placeholder="Ex: Cocody" required />
+            </div>
+
+            <div class="field" style="margin-top: 12px;">
+              <label class="field__label">Adresse</label>
+              <input type="text" class="field__input" id="addrStreet" placeholder="Ex: Rue des Jardins" required />
+            </div>
+
+            <div class="field" style="margin-top: 12px;">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                <input type="checkbox" id="addrDefault" /> Définir comme adresse par défaut
+              </label>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 16px;">
+              <button type="submit" class="btn btn--primary" id="btnSaveAddress">Enregistrer</button>
+              <button type="button" class="btn btn--ghost" onclick="document.getElementById('addressForm').style.display='none'">Annuler</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Liste des adresses -->
+        <div id="addressesList">
+          <p style="color: var(--color-text-soft);">Chargement de vos adresses...</p>
+        </div>
+
       </div>
     </div>
   </main>
+
   <footer class="footer" id="footer"></footer>
+
   <script type="module">
     import { renderNavbar } from '../js/ui/navbar.js';
     import { renderFooter } from '../js/ui/footer.js';
     import { initSupabase } from '../js/supabase-client.js';
-    renderNavbar('client'); renderFooter();
-    document.getElementById('btnLogout').addEventListener('click', async (e) => {
-      e.preventDefault(); const sb = await initSupabase(); await sb.auth.signOut(); window.location.href = '../index.html';
+
+    renderNavbar('client');
+    renderFooter();
+
+    let sb = null;
+    let currentUser = null;
+
+    async function loadAddresses() {
+      sb = await initSupabase();
+      
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      currentUser = session.user;
+
+      // Récupérer les adresses
+      const { data: addresses, error } = await sb
+        .from('addresses')
+        .select('*')
+        .eq('client_id', session.user.id)
+        .order('is_default', { ascending: false });
+
+      const listEl = document.getElementById('addressesList');
+
+      if (error || !addresses || addresses.length === 0) {
+        listEl.innerHTML = '<p style="color: var(--color-text-soft);">Vous n\'avez pas encore enregistré d\'adresse.</p>';
+        return;
+      }
+
+      listEl.innerHTML = addresses.map(a => `
+        <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px; box-shadow: var(--shadow-sm); border-left: 4px solid ${a.is_default ? 'var(--color-primary)' : 'var(--color-border)'};">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <strong style="font-size: 16px;">${a.label}</strong>
+            ${a.is_default ? '<span class="badge badge--success">Par défaut</span>' : ''}
+          </div>
+          <p style="font-size: 14px; margin-bottom: 4px;"><strong>Nom :</strong> ${a.full_name}</p>
+          <p style="font-size: 14px; margin-bottom: 4px;"><strong>Téléphone :</strong> ${a.phone}</p>
+          <p style="font-size: 14px; margin-bottom: 4px;"><strong>Adresse :</strong> ${a.address}, ${a.commune}, ${a.city}</p>
+          
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="btn btn--outline btn--sm" onclick="setDefault('${a.id}')">Définir par défaut</button>
+            <button class="btn btn--danger btn--sm" onclick="deleteAddress('${a.id}')">Supprimer</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Formulaire d'ajout
+    document.getElementById('addAddressForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSaveAddress');
+      btn.textContent = 'Enregistrement...';
+      btn.disabled = true;
+
+      const isDefault = document.getElementById('addrDefault').checked;
+
+      // Si c'est l'adresse par défaut, on retire ce statut aux autres
+      if (isDefault) {
+        await sb.from('addresses').update({ is_default: false }).eq('client_id', currentUser.id);
+      }
+
+      const { error } = await sb.from('addresses').insert([{
+        client_id: currentUser.id,
+        label: document.getElementById('addrLabel').value,
+        full_name: document.getElementById('addrName').value,
+        phone: document.getElementById('addrPhone').value,
+        city: document.getElementById('addrCity').value,
+        commune: document.getElementById('addrCommune').value,
+        address: document.getElementById('addrStreet').value,
+        is_default: isDefault
+      }]);
+
+      if (error) {
+        alert("Erreur : " + error.message);
+        btn.textContent = 'Enregistrer';
+        btn.disabled = false;
+      } else {
+        document.getElementById('addressForm').style.display = 'none';
+        document.getElementById('addAddressForm').reset();
+        loadAddresses();
+      }
     });
+
+    // Définir par défaut
+    window.setDefault = async function(addressId) {
+      await sb.from('addresses').update({ is_default: false }).eq('client_id', currentUser.id);
+      await sb.from('addresses').update({ is_default: true }).eq('id', addressId);
+      loadAddresses();
+    };
+
+    // Supprimer une adresse
+    window.deleteAddress = async function(addressId) {
+      if (confirm("Voulez-vous vraiment supprimer cette adresse ?")) {
+        await sb.from('addresses').delete().eq('id', addressId);
+        loadAddresses();
+      }
+    };
+
+    document.getElementById('btnLogout').addEventListener('click', async (e) => {
+      e.preventDefault();
+      await sb.auth.signOut();
+      window.location.href = '../index.html';
+    });
+
+    loadAddresses();
   </script>
 </body>
 </html>
