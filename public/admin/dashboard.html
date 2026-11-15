@@ -106,6 +106,15 @@
     renderNavbar('admin');
     renderFooter();
 
+    // Dictionnaire des statuts (pour l'affichage)
+    const statusLabels = {
+      'new': 'Nouvelle',
+      'confirmed': 'Confirmée',
+      'delivering': 'En livraison',
+      'delivered': 'Livrée',
+      'cancelled': 'Annulée'
+    };
+
     async function loadAdminDashboard() {
       const sb = await initSupabase();
       
@@ -138,8 +147,8 @@
       } else {
         ordersList.innerHTML = orders.map(o => {
           // Menu déroulant pour changer le statut
-          const statusOptions = ['new', 'confirmed', 'delivering', 'delivered', 'cancelled'].map(s => 
-            `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>`
+          const statusOptions = Object.keys(statusLabels).map(s => 
+            `<option value="${s}" ${o.status === s ? 'selected' : ''}>${statusLabels[s]}</option>`
           ).join('');
 
           // Lien WhatsApp
@@ -150,16 +159,23 @@
             <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px; box-shadow: var(--shadow-sm);">
               <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                 <strong>${o.order_number}</strong>
-                <span class="badge">${o.status}</span>
+                <span class="badge">${statusLabels[o.status] || o.status}</span>
               </div>
               <p style="font-size: 14px; margin-bottom: 4px;"><strong>Client :</strong> ${o.delivery_full_name} (${o.delivery_phone})</p>
               <p style="font-size: 14px; margin-bottom: 4px;"><strong>Livraison :</strong> ${o.delivery_address}, ${o.delivery_commune}</p>
               <p style="font-size: 14px; margin-bottom: 4px;"><strong>Total :</strong> ${formatPrice(o.total_fcfa)}</p>
               
+              <!-- INFOS DE PAIEMENT -->
+              <div style="background: var(--color-bg-alt); padding: 8px; border-radius: 8px; margin: 8px 0; font-size: 13px;">
+                <strong>Paiement :</strong> ${o.payment_method} 
+                ${o.transaction_code ? ` (Code: <strong>${o.transaction_code}</strong>)` : ''}
+              </div>
+              
               <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
                 <select onchange="changeOrderStatus('${o.id}', this.value)" style="padding: 6px; border-radius: 6px; border: 1px solid var(--color-border);">
                   ${statusOptions}
                 </select>
+                <button class="btn btn--success btn--sm" onclick="validatePayment('${o.id}', this)">✅ Valider Paiement</button>
                 <a href="${whatsappLink}" target="_blank" class="btn btn--success btn--sm" style="display: flex; align-items: center; gap: 4px;">
                   💬 WhatsApp
                 </a>
@@ -220,6 +236,20 @@
       const { error } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
       if (error) alert("Erreur : " + error.message);
       else alert("Statut de la commande mis à jour !");
+    };
+
+    window.validatePayment = async function(orderId, btn) {
+      btn.textContent = '...'; btn.disabled = true;
+      const sb = await initSupabase();
+      const { error } = await sb.from('orders').update({ payment_status: 'paid' }).eq('id', orderId);
+      if (error) { 
+        alert(error.message); 
+        btn.textContent = '✅ Valider Paiement'; 
+        btn.disabled = false; 
+      } else { 
+        alert("Paiement validé avec succès !"); 
+        window.location.reload(); 
+      }
     };
 
     window.approveShop = async function(shopId, btn) {
