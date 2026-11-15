@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mes Ventes — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/pages/home.css" />
+  <link rel="stylesheet" href="../css/pages/vendor.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="container section">
+    
+    <div class="vendor-header">
+      <div class="vendor-info">
+        <span class="badge badge--success">Espace Vendeur</span>
+        <h1>Mes Ventes & Revenus</h1>
+        <p>Suivez vos commandes et vos gains.</p>
+      </div>
+    </div>
+
+    <!-- Statistiques Financières -->
+    <div class="vendor-stats-grid">
+      <div class="stat-card" style="border-left-color: var(--color-text);">
+        <span class="stat-label">Chiffre d'affaires</span>
+        <strong class="stat-value" id="totalRevenue">0 FCFA</strong>
+      </div>
+      <div class="stat-card" style="border-left-color: var(--color-danger);">
+        <span class="stat-label">Commission Zemar (10%)</span>
+        <strong class="stat-value" style="color: var(--color-danger);" id="totalCommission">- 0 FCFA</strong>
+      </div>
+      <div class="stat-card" style="border-left-color: var(--color-success); background: var(--color-success-soft);">
+        <span class="stat-label" style="color: var(--color-success);">Net à recevoir</span>
+        <strong class="stat-value" style="color: var(--color-success);" id="totalNet">0 FCFA</strong>
+      </div>
+    </div>
+
+    <div class="vendor-layout">
+      <aside class="vendor-sidebar">
+        <a href="./dashboard.html" class="vendor-nav-link">Tableau de bord</a>
+        <a href="./add-product.html" class="vendor-nav-link">Ajouter un produit</a>
+        <a href="./sales.html" class="vendor-nav-link active">Mes ventes & Revenus</a>
+        <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--color-border);">
+        <a href="#" class="vendor-nav-link" id="btnLogout" style="color: var(--color-danger);">Déconnexion</a>
+      </aside>
+
+      <div class="vendor-content">
+        <h2 class="section-title">Détail des ventes</h2>
+        <div id="salesList">
+          <p style="color: var(--color-text-soft);">Chargement de vos ventes...</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from '../js/ui/navbar.js';
+    import { renderFooter } from '../js/ui/footer.js';
+    import { initSupabase } from '../js/supabase-client.js';
+    import { formatPrice } from '../js/utils/format.js';
+
+    renderNavbar('vendor');
+    renderFooter();
+
+    async function loadSales() {
+      const sb = await initSupabase();
+      
+      // 1. Vérifier la session
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      // 2. Récupérer la boutique du vendeur
+      const { data: shop } = await sb
+        .from('shops')
+        .select('id')
+        .eq('owner_id', session.user.id)
+        .single();
+
+      if (!shop) {
+        document.getElementById('salesList').innerHTML = '<p>Boutique introuvable.</p>';
+        return;
+      }
+
+      // 3. Récupérer les ventes liées à SA boutique
+      const { data: sales, error } = await sb
+        .from('order_items')
+        .select(`
+          *,
+          orders ( order_number, status, created_at )
+        `)
+        .eq('shop_id', shop.id)
+        .order('created_at', { ascending: false });
+
+      const listEl = document.getElementById('salesList');
+
+      if (error || !sales || sales.length === 0) {
+        listEl.innerHTML = '<p style="color: var(--color-text-soft);">Vous n\'avez pas encore de ventes.</p>';
+        document.getElementById('totalRevenue').textContent = '0 FCFA';
+        document.getElementById('totalCommission').textContent = '- 0 FCFA';
+        document.getElementById('totalNet').textContent = '0 FCFA';
+        return;
+      }
+
+      // 4. Calculer les totaux
+      let totalRevenue = 0;
+      let totalCommission = 0;
+      let totalNet = 0;
+
+      sales.forEach(s => {
+        const lineTotal = s.unit_price_fcfa * s.quantity;
+        const commission = lineTotal * 0.10;
+        totalRevenue += lineTotal;
+        totalCommission += commission;
+        totalNet += (lineTotal - commission);
+      });
+
+      document.getElementById('totalRevenue').textContent = formatPrice(totalRevenue);
+      document.getElementById('totalCommission').textContent = '- ' + formatPrice(totalCommission);
+      document.getElementById('totalNet').textContent = formatPrice(totalNet);
+
+      // 5. Afficher la liste détaillée
+      listEl.innerHTML = sales.map(s => {
+        const lineTotal = s.unit_price_fcfa * s.quantity;
+        const commission = lineTotal * 0.10;
+        const net = lineTotal - commission;
+        
+        const orderStatus = s.orders?.status || 'inconnu';
+        let statusBadge = '<span class="badge badge--warning">' + orderStatus + '</span>';
+        if (orderStatus === 'delivered') statusBadge = '<span class="badge badge--success">Livrée</span>';
+        if (orderStatus === 'cancelled') statusBadge = '<span class="badge badge--danger">Annulée</span>';
+
+        return `
+          <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <strong>Commande ${s.orders?.order_number || 'N/A'}</strong>
+              ${statusBadge}
+            </div>
+            <p style="font-size: 14px; margin-bottom: 4px;"><strong>Produit :</strong> ${s.product_name}</p>
+            <p style="font-size: 14px; margin-bottom: 4px;"><strong>Quantité :</strong> ${s.quantity}</p>
+            
+            <div style="display: flex; justify-content: space-between; font-size: 13px; border-top: 1px solid var(--color-border); margin-top: 8px; padding-top: 8px;">
+              <span style="color: var(--color-text-soft);">Total ligne : ${formatPrice(lineTotal)}</span>
+              <span style="color: var(--color-danger);">Commission : -${formatPrice(commission)}</span>
+              <strong style="color: var(--color-success);">Net : ${formatPrice(net)}</strong>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('btnLogout').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const sb = await initSupabase();
+      await sb.auth.signOut();
+      window.location.href = '../index.html';
+    });
+
+    loadSales();
+  </script>
+</body>
+</html>
