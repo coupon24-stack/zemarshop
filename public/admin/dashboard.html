@@ -24,28 +24,29 @@
     <div class="vendor-header" style="border-left: 4px solid var(--color-text);">
       <div class="vendor-info">
         <span class="badge" style="background: var(--color-text); color: white;">Administrateur</span>
-        <h1>Tableau de bord Général</h1>
+        <h1 id="adminName">Tableau de bord Général</h1>
         <p>Bienvenue sur l'espace de gestion de ZemarShop.</p>
       </div>
+      <a href="#" id="btnLogout" class="btn btn--outline btn--sm">Déconnexion</a>
     </div>
 
     <!-- Statistiques Globales -->
     <div class="vendor-stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 32px;">
       <div class="stat-card" style="border-left-color: var(--color-text);">
         <span class="stat-label">Ventes Totales</span>
-        <strong class="stat-value">450 000 FCFA</strong>
+        <strong class="stat-value">0 FCFA</strong>
       </div>
       <div class="stat-card" style="border-left-color: var(--color-success);">
         <span class="stat-label">Commissions (10%)</span>
-        <strong class="stat-value" style="color: var(--color-success);">45 000 FCFA</strong>
+        <strong class="stat-value" style="color: var(--color-success);">0 FCFA</strong>
       </div>
       <div class="stat-card">
         <span class="stat-label">Commandes en cours</span>
-        <strong class="stat-value">8</strong>
+        <strong class="stat-value" id="statOrders">0</strong>
       </div>
       <div class="stat-card">
         <span class="stat-label">Produits à valider</span>
-        <strong class="stat-value" style="color: var(--color-warning);">3</strong>
+        <strong class="stat-value" style="color: var(--color-warning);" id="statPendingProducts">0</strong>
       </div>
     </div>
 
@@ -68,56 +69,16 @@
         <!-- Section Validation Vendeurs -->
         <div class="client-section" style="margin-bottom: 32px;">
           <h2 class="section-title">Nouveaux vendeurs (à valider)</h2>
-          
-          <div class="vendor-product-item">
-            <div class="client-avatar" style="width: 48px; height: 48px; font-size: 16px;">B</div>
-            <div class="vendor-product-info">
-              <h3>Boutique Élégance</h3>
-              <p>Koffi Marc — Cocody, Abidjan</p>
-            </div>
-            <div class="vendor-product-actions" style="flex-direction: row;">
-              <button class="btn btn--success btn--sm">Approuver</button>
-              <button class="btn btn--danger btn--sm">Refuser</button>
-            </div>
-          </div>
-
-          <div class="vendor-product-item">
-            <div class="client-avatar" style="width: 48px; height: 48px; font-size: 16px;">T</div>
-            <div class="vendor-product-info">
-              <h3>TechZone</h3>
-              <p>Yao Serge — Yopougon, Abidjan</p>
-            </div>
-            <div class="vendor-product-actions" style="flex-direction: row;">
-              <button class="btn btn--success btn--sm">Approuver</button>
-              <button class="btn btn--danger btn--sm">Refuser</button>
-            </div>
+          <div id="pendingShopsList">
+            <p style="color: var(--color-text-soft);">Chargement...</p>
           </div>
         </div>
 
-        <!-- Section Nouvelles Commandes -->
+        <!-- Section Validation Produits -->
         <div class="client-section">
-          <h2 class="section-title">Dernières commandes</h2>
-          
-          <div class="vendor-product-item">
-            <div class="vendor-product-info">
-              <h3>Commande #ZM-2025-084</h3>
-              <p>Client : Koffi Yao — Total : 16 500 FCFA</p>
-            </div>
-            <div class="vendor-product-actions">
-              <span class="badge badge--warning">En attente</span>
-              <button class="btn btn--outline btn--sm">Gérer</button>
-            </div>
-          </div>
-
-          <div class="vendor-product-item">
-            <div class="vendor-product-info">
-              <h3>Commande #ZM-2025-083</h3>
-              <p>Client : Awa Diarra — Total : 25 000 FCFA</p>
-            </div>
-            <div class="vendor-product-actions">
-              <span class="badge badge--success">Confirmée</span>
-              <button class="btn btn--outline btn--sm">Gérer</button>
-            </div>
+          <h2 class="section-title">Produits en attente de validation</h2>
+          <div id="pendingProductsList">
+            <p style="color: var(--color-text-soft);">Chargement...</p>
           </div>
         </div>
 
@@ -131,10 +92,130 @@
   <script type="module">
     import { renderNavbar } from '../js/ui/navbar.js';
     import { renderFooter } from '../js/ui/footer.js';
+    import { initSupabase } from '../js/supabase-client.js';
+    import { formatPrice } from '../js/utils/format.js';
 
-    // On réutilise 'vendor' pour la navbar car on est dans un sous-dossier
-    renderNavbar('vendor');
+    renderNavbar('admin');
     renderFooter();
+
+    async function loadAdminDashboard() {
+      const sb = await initSupabase();
+      
+      // 1. Vérifier la session
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      // 2. Vérifier que c'est bien un admin
+      const { data: profile } = await sb.from('profiles').select('role, full_name').eq('id', session.user.id).single();
+      
+      if (!profile || profile.role !== 'admin') {
+        alert("Accès refusé. Vous n'êtes pas administrateur.");
+        window.location.href = '../index.html';
+        return;
+      }
+
+      document.getElementById('adminName').textContent = "Bonjour, " + profile.full_name;
+
+      // 3. Compter les produits en attente
+      const { count: pendingCount } = await sb
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      document.getElementById('statPendingProducts').textContent = pendingCount || 0;
+
+      // 4. Charger les boutiques en attente
+      const { data: pendingShops } = await sb
+        .from('shops')
+        .select('*')
+        .eq('status', 'pending');
+
+      const shopsList = document.getElementById('pendingShopsList');
+      if (!pendingShops || pendingShops.length === 0) {
+        shopsList.innerHTML = '<p style="color: var(--color-text-soft);">Aucune boutique en attente.</p>';
+      } else {
+        shopsList.innerHTML = pendingShops.map(s => `
+          <div class="vendor-product-item">
+            <div class="client-avatar" style="width: 48px; height: 48px; font-size: 16px;">${s.name[0]}</div>
+            <div class="vendor-product-info">
+              <h3>${s.name}</h3>
+              <p>${s.city} — ${s.commune}</p>
+            </div>
+            <div class="vendor-product-actions" style="flex-direction: row;">
+              <button class="btn btn--success btn--sm" onclick="approveShop('${s.id}', this)">Approuver</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // 5. Charger les produits en attente
+      const { data: pendingProducts } = await sb
+        .from('products')
+        .select('*, shops ( name )')
+        .eq('status', 'pending');
+
+      const productsList = document.getElementById('pendingProductsList');
+      if (!pendingProducts || pendingProducts.length === 0) {
+        productsList.innerHTML = '<p style="color: var(--color-text-soft);">Aucun produit en attente.</p>';
+      } else {
+        productsList.innerHTML = pendingProducts.map(p => `
+          <div class="vendor-product-item">
+            <img src="${p.image_url || 'https://via.placeholder.com/100'}" style="width:50px; height:50px; object-fit:cover; border-radius:8px;" />
+            <div class="vendor-product-info">
+              <h3>${p.name}</h3>
+              <p>${formatPrice(p.price_fcfa)} — ${p.shops?.name}</p>
+            </div>
+            <div class="vendor-product-actions" style="flex-direction: row;">
+              <button class="btn btn--success btn--sm" onclick="approveProduct('${p.id}', this)">Approuver</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Fonctions d'approbation
+    window.approveShop = async function(shopId, btn) {
+      btn.textContent = '...';
+      btn.disabled = true;
+      const sb = await initSupabase();
+      const { error } = await sb.from('shops').update({ status: 'approved' }).eq('id', shopId);
+      if (error) {
+        alert("Erreur : " + error.message);
+        btn.textContent = 'Approuver';
+        btn.disabled = false;
+      } else {
+        alert("Boutique approuvée !");
+        window.location.reload();
+      }
+    };
+
+    window.approveProduct = async function(prodId, btn) {
+      btn.textContent = '...';
+      btn.disabled = true;
+      const sb = await initSupabase();
+      const { error } = await sb.from('products').update({ status: 'approved' }).eq('id', prodId);
+      if (error) {
+        alert("Erreur : " + error.message);
+        btn.textContent = 'Approuver';
+        btn.disabled = false;
+      } else {
+        alert("Produit approuvé ! Il est maintenant en ligne.");
+        window.location.reload();
+      }
+    };
+
+    // Déconnexion
+    document.getElementById('btnLogout').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const sb = await initSupabase();
+      await sb.auth.signOut();
+      window.location.href = '../index.html';
+    });
+
+    loadAdminDashboard();
   </script>
 </body>
-                </html>
+</html>
