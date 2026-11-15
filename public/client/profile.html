@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mon Profil — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/pages/home.css" />
+  <link rel="stylesheet" href="../css/pages/client.css" />
+</head>
+<body style="background-color: var(--color-bg-alt);">
+
+  <header class="navbar" id="navbar"></header>
+
+  <main class="container section">
+    <div class="client-layout">
+      
+      <!-- Menu de gauche -->
+      <aside class="client-sidebar">
+        <a href="./dashboard.html" class="client-nav-link">Tableau de bord</a>
+        <a href="./orders.html" class="client-nav-link">Mes commandes</a>
+        <a href="./favorites.html" class="client-nav-link">Mes favoris</a>
+        <a href="./addresses.html" class="client-nav-link">Mes adresses</a>
+        <a href="./profile.html" class="client-nav-link active">Mon profil</a>
+        <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--color-border);">
+        <a href="#" class="client-nav-link" id="btnLogout" style="color: var(--color-danger);">Déconnexion</a>
+      </aside>
+
+      <!-- Contenu principal -->
+      <div class="client-content">
+        <h2 class="section-title" style="margin-bottom: 24px;">Mon Profil</h2>
+        
+        <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm);">
+          <form id="profileForm">
+            <div class="field">
+              <label class="field__label">Nom complet</label>
+              <input type="text" class="field__input" id="profileName" required />
+            </div>
+            
+            <div class="field" style="margin-top: 16px;">
+              <label class="field__label">Adresse e-mail</label>
+              <input type="email" class="field__input" id="profileEmail" disabled style="background: var(--color-bg-soft);" />
+              <small style="color: var(--color-text-muted); font-size: 12px; margin-top: 4px;">L'email ne peut pas être modifié.</small>
+            </div>
+
+            <div class="field" style="margin-top: 16px;">
+              <label class="field__label">Numéro de téléphone</label>
+              <input type="tel" class="field__input" id="profilePhone" placeholder="Ex: 0700000000" />
+            </div>
+
+            <button type="submit" class="btn btn--primary" style="margin-top: 24px;" id="btnSaveProfile">
+              Enregistrer les modifications
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+
+  <script type="module">
+    import { renderNavbar } from '../js/ui/navbar.js';
+    import { renderFooter } from '../js/ui/footer.js';
+    import { initSupabase } from '../js/supabase-client.js';
+
+    renderNavbar('client');
+    renderFooter();
+
+    let sb = null;
+    let currentUser = null;
+
+    async function loadProfile() {
+      sb = await initSupabase();
+      
+      // 1. Vérifier la session
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      currentUser = session.user;
+
+      // 2. Récupérer le profil
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('full_name, email, phone')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile) {
+        document.getElementById('profileName').value = profile.full_name || '';
+        document.getElementById('profileEmail').value = profile.email || session.user.email;
+        document.getElementById('profilePhone').value = profile.phone || '';
+      }
+    }
+
+    // 3. Enregistrer les modifications
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSaveProfile');
+      
+      btn.textContent = 'Enregistrement...';
+      btn.disabled = true;
+
+      const newName = document.getElementById('profileName').value;
+      const newPhone = document.getElementById('profilePhone').value;
+
+      const { error } = await sb
+        .from('profiles')
+        .update({ 
+          full_name: newName,
+          phone: newPhone
+        })
+        .eq('id', currentUser.id);
+
+      if (error) {
+        alert("Erreur : " + error.message);
+        btn.textContent = 'Enregistrer les modifications';
+        btn.disabled = false;
+      } else {
+        alert("Profil mis à jour avec succès !");
+        window.location.reload();
+      }
+    });
+
+    // Déconnexion
+    document.getElementById('btnLogout').addEventListener('click', async (e) => {
+      e.preventDefault();
+      await sb.auth.signOut();
+      window.location.href = '../index.html';
+    });
+
+    loadProfile();
+  </script>
+</body>
+  </html>
