@@ -4,46 +4,180 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Devenir vendeur — ZemarShop</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="./css/main.css" />
   <link rel="stylesheet" href="./css/components.css" />
   <link rel="stylesheet" href="./css/pages/home.css" />
   <link rel="stylesheet" href="./css/pages/auth.css" />
 </head>
 <body style="background-color: var(--color-bg-alt);">
+
   <header class="navbar" id="navbar"></header>
-  <main class="auth-page container">
+
+  <main class="auth-page container" style="padding-top: 20px; padding-bottom: 40px;">
     <div class="auth-card" style="max-width: 600px;">
+      
       <div class="auth-header">
         <h1>Devenir vendeur</h1>
         <p>Développez votre activité avec ZemarShop.</p>
       </div>
-      <form id="registerVendorForm" onsubmit="event.preventDefault();">
+
+      <form id="registerVendorForm">
+        
         <h3 style="margin-bottom: 8px; font-size: 14px; color: var(--color-text-soft); text-transform: uppercase;">Informations personnelles</h3>
-        <div class="field"><label class="field__label">Nom du responsable</label><input type="text" class="field__input" placeholder="Ex: Koffi Yao" required /></div>
-        <div class="field"><label class="field__label">Adresse e-mail</label><input type="email" class="field__input" placeholder="votre@email.com" required /></div>
-        <div class="field"><label class="field__label">Numéro de téléphone</label><input type="tel" class="field__input" placeholder="Ex: 0700000000" required /></div>
+        
+        <div class="field">
+          <label class="field__label">Nom du responsable</label>
+          <input type="text" class="field__input" id="vendorName" placeholder="Ex: Koffi Yao" required />
+        </div>
+
+        <div class="field" style="margin-top: 12px;">
+          <label class="field__label">Adresse e-mail</label>
+          <input type="email" class="field__input" id="vendorEmail" placeholder="votre@email.com" required />
+        </div>
+
+        <div class="field" style="margin-top: 12px;">
+          <label class="field__label">Numéro de téléphone</label>
+          <input type="tel" class="field__input" id="vendorPhone" placeholder="Ex: 0700000000" required />
+        </div>
+
+        <div class="field" style="margin-top: 12px;">
+          <label class="field__label">Mot de passe</label>
+          <input type="password" class="field__input" id="vendorPassword" placeholder="••••••••" required minlength="6" />
+        </div>
+
         <h3 style="margin-top: 16px; margin-bottom: 8px; font-size: 14px; color: var(--color-text-soft); text-transform: uppercase;">Informations de la boutique</h3>
-        <div class="field"><label class="field__label">Nom de la boutique</label><input type="text" class="field__input" placeholder="Ex: Boutique Awa" required /></div>
-        <div class="field"><label class="field__label">Ville</label><input type="text" class="field__input" placeholder="Ex: Abidjan" required /></div>
-        <div class="field"><label class="field__label">Commune</label><input type="text" class="field__input" placeholder="Ex: Cocody" required /></div>
-        <div class="field" style="flex-direction: row; align-items: flex-start; gap: 8px;"><input type="checkbox" required style="margin-top: 4px;" /><label style="font-size: 13px; color: var(--color-text-soft);">J'accepte les conditions générales vendeurs de ZemarShop.</label></div>
-        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit" style="margin-top: 16px;">Soumettre ma demande</button>
+
+        <div class="field">
+          <label class="field__label">Nom de la boutique</label>
+          <input type="text" class="field__input" id="shopName" placeholder="Ex: Boutique Awa" required />
+        </div>
+
+        <div class="field" style="margin-top: 12px;">
+          <label class="field__label">Ville</label>
+          <input type="text" class="field__input" id="shopCity" placeholder="Ex: Abidjan" required />
+        </div>
+
+        <div class="field" style="margin-top: 12px;">
+          <label class="field__label">Commune</label>
+          <input type="text" class="field__input" id="shopCommune" placeholder="Ex: Cocody" required />
+        </div>
+
+        <div class="field" style="margin-top: 12px;">
+          <label class="field__label">Adresse / Localisation</label>
+          <input type="text" class="field__input" id="shopAddress" placeholder="Ex: Rue des Jardins" required />
+        </div>
+
+        <div class="field" style="flex-direction: row; align-items: flex-start; gap: 8px; margin-top: 16px;">
+          <input type="checkbox" id="vendorTerms" required style="margin-top: 4px;" />
+          <label for="vendorTerms" style="font-size: 13px; color: var(--color-text-soft);">J'accepte les conditions générales vendeurs de ZemarShop.</label>
+        </div>
+
+        <!-- Zone d'erreur -->
+        <div id="errorMsg" style="display: none; color: var(--color-danger); font-size: 14px; text-align: center; margin-top: 16px;"></div>
+
+        <button type="submit" class="btn btn--primary btn--lg btn--full" id="btnSubmit" style="margin-top: 16px;">
+          Soumettre ma demande
+        </button>
+
       </form>
-      <div class="auth-footer"><p>Vous avez déjà un compte ? <a href="./login.html">Se connecter</a></p></div>
+
+      <div class="auth-footer">
+        <p>Vous avez déjà un compte ? <a href="./login.html">Se connecter</a></p>
+      </div>
+
     </div>
   </main>
+
   <footer class="footer" id="footer"></footer>
+
   <script type="module">
     import { renderNavbar } from './js/ui/navbar.js';
     import { renderFooter } from './js/ui/footer.js';
-    renderNavbar('register'); renderFooter();
-    document.getElementById('registerVendorForm').addEventListener('submit', (e) => {
+    import { initSupabase } from './js/supabase-client.js';
+
+    renderNavbar('register');
+    renderFooter();
+
+    const sb = await initSupabase();
+
+    document.getElementById('registerVendorForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
       const btn = document.getElementById('btnSubmit');
-      btn.textContent = 'Envoi en cours...'; btn.disabled = true;
-      setTimeout(() => { alert("Votre demande a bien été envoyée ! L'administrateur va la valider."); window.location.href = './index.html'; }, 1000);
+      const errorEl = document.getElementById('errorMsg');
+      
+      const fullName = document.getElementById('vendorName').value;
+      const email = document.getElementById('vendorEmail').value;
+      const phone = document.getElementById('vendorPhone').value;
+      const password = document.getElementById('vendorPassword').value;
+      
+      const shopName = document.getElementById('shopName').value;
+      const shopCity = document.getElementById('shopCity').value;
+      const shopCommune = document.getElementById('shopCommune').value;
+      const shopAddress = document.getElementById('shopAddress').value;
+
+      btn.textContent = 'Création en cours...';
+      btn.disabled = true;
+      errorEl.style.display = 'none';
+
+      // 1. Création de l'utilisateur (Auth)
+      const { data: authData, error: authError } = await sb.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: { 
+            full_name: fullName,
+            role: 'vendor' // On précise que c'est un vendeur
+          }
+        }
+      });
+
+      if (authError) {
+        errorEl.textContent = "Erreur : " + authError.message;
+        errorEl.style.display = 'block';
+        btn.textContent = 'Soumettre ma demande';
+        btn.disabled = false;
+        return;
+      }
+
+      // 2. Mise à jour du profil pour lui donner le rôle 'vendor'
+      // (Le trigger a créé un profil 'client', on le passe en 'vendor')
+      if (authData.user) {
+        await sb.from('profiles').update({ role: 'vendor' }).eq('id', authData.user.id);
+
+        // 3. Création de la boutique
+        const { error: shopError } = await sb.from('shops').insert([
+          {
+            owner_id: authData.user.id,
+            name: shopName,
+            phone: phone,
+            email: email,
+            city: shopCity,
+            commune: shopCommune,
+            address: shopAddress,
+            status: 'pending' // En attente de validation par l'admin
+          }
+        ]);
+
+        if (shopError) {
+          console.error(shopError);
+          errorEl.textContent = "Erreur boutique : " + shopError.message;
+          errorEl.style.display = 'block';
+          btn.textContent = 'Soumettre ma demande';
+          btn.disabled = false;
+          return;
+        }
+      }
+
+      // 4. Redirection
+      alert("Votre demande a bien été envoyée ! L'administrateur va la valider.");
+      window.location.href = './vendor/dashboard.html';
     });
   </script>
 </body>
-    </html>
+</html>
