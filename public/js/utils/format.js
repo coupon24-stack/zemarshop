@@ -16,13 +16,10 @@ export function formatDate(dateInput) {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-// Récupère l'URL de l'image principale avec sécurité
+// Récupère l'URL de l'image principale
 export function primaryImage(product) {
-  // 1. L'image directe
+  // 1. On cherche image_url (notre nouvelle norme Supabase)
   if (product?.image_url) return product.image_url;
-  // 2. L'image dans le tableau (Supabase)
-  const url = product?.product_images?.[0]?.url;
-  if (url) return url;
-  // 3. Image de secours (un joli sac ou un logo si l'image est introuvable)
-  return 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80';
+  // 2. Fallback
+  return 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600';
 }
