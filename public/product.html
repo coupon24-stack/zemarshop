@@ -18,13 +18,26 @@
 
   <header class="navbar" id="navbar"></header>
 
-  <div class="container" style="margin-top: 16px;">
+  <div class="container" style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
     <button onclick="history.back();" 
             style="display: inline-flex; align-items: center; gap: 8px; background: none; border: none; color: #64748B; font-size: 14px; font-weight: 600; cursor: pointer; padding: 0;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12H5M12 19l-7-7 7-7"/>
       </svg>
       Retour
+    </button>
+
+    <!-- BOUTON PARTAGER -->
+    <button onclick="shareProduct()" 
+            style="display: inline-flex; align-items: center; gap: 8px; background: none; border: none; color: var(--color-primary); font-size: 14px; font-weight: 600; cursor: pointer; padding: 0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="18" cy="5" r="3"></circle>
+        <circle cx="6" cy="12" r="3"></circle>
+        <circle cx="18" cy="19" r="3"></circle>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+      </svg>
+      Partager
     </button>
   </div>
 
@@ -51,10 +64,7 @@
 
       <p class="product-info__desc" id="productDesc">Chargement...</p>
 
-      <!-- ZONE DES VARIANTES (Cachée par défaut) -->
       <div class="product-variants" id="variantsContainer" style="display: none;">
-        
-        <!-- Couleur -->
         <div class="variant-group" id="colorGroup" style="display: none;">
           <span class="variant-label">Couleur</span>
           <div class="variant-options" id="colorOptions">
@@ -64,7 +74,6 @@
           </div>
         </div>
         
-        <!-- Taille -->
         <div class="variant-group" id="sizeGroup" style="display: none;">
           <span class="variant-label">Taille</span>
           <div class="variant-options" id="sizeOptions">
@@ -74,7 +83,6 @@
           </div>
         </div>
 
-        <!-- Poids -->
         <div class="variant-group" id="weightGroup" style="display: none;">
           <span class="variant-label">Poids</span>
           <div class="variant-options" id="weightOptions">
@@ -83,7 +91,6 @@
             <button class="variant-btn" onclick="selectSize('2kg', this)">2kg</button>
           </div>
         </div>
-
       </div>
 
       <div class="product-actions">
@@ -92,6 +99,44 @@
       </div>
     </div>
   </main>
+
+  <!-- NOUVELLE SECTION : AVIS CLIENTS -->
+  <section class="section section--alt">
+    <div class="container" style="max-width: 800px;">
+      <h2 style="font-size: 22px; margin-bottom: 24px;">Avis clients</h2>
+
+      <!-- Formulaire d'avis -->
+      <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: var(--shadow-sm); margin-bottom: 32px;">
+        <h3 style="font-size: 16px; margin-bottom: 16px;">Laisser un avis</h3>
+        <form id="reviewForm">
+          <div class="field">
+            <label class="field__label">Votre nom</label>
+            <input type="text" class="field__input" id="reviewName" placeholder="Ex: Koffi Y." required />
+          </div>
+          <div class="field" style="margin-top: 12px;">
+            <label class="field__label">Note</label>
+            <select class="field__select" id="reviewRating" required>
+              <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
+              <option value="4">⭐⭐⭐⭐ (Très bien)</option>
+              <option value="3">⭐⭐⭐ (Bien)</option>
+              <option value="2">⭐⭐ (Moyen)</option>
+              <option value="1">⭐ (Mauvais)</option>
+            </select>
+          </div>
+          <div class="field" style="margin-top: 12px;">
+            <label class="field__label">Votre commentaire</label>
+            <textarea class="field__textarea" id="reviewComment" placeholder="Qu'avez-vous pensé du produit ?" required></textarea>
+          </div>
+          <button type="submit" class="btn btn--primary" style="margin-top: 16px;" id="btnSubmitReview">Publier mon avis</button>
+        </form>
+      </div>
+
+      <!-- Liste des avis -->
+      <div id="reviewsList">
+        <p style="color: var(--color-text-soft);">Chargement des avis...</p>
+      </div>
+    </div>
+  </section>
 
   <footer class="footer" id="footer"></footer>
 
@@ -105,9 +150,10 @@
     renderFooter();
 
     let product = null;
+    let sb = null;
 
     async function init() {
-      const sb = await initSupabase();
+      sb = await initSupabase();
       const params = new URLSearchParams(window.location.search);
       const productId = params.get('id');
 
@@ -116,7 +162,6 @@
         return;
       }
 
-      // On récupère aussi le variant_type
       const { data, error } = await sb
         .from('products')
         .select(`id, name, description, price_fcfa, old_price_fcfa, image_url, variant_type, shops ( name )`)
@@ -130,9 +175,7 @@
 
       product = data;
 
-      // Remplissage de base
       const img = product.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600';
-      
       document.getElementById('productImage').src = img;
       document.getElementById('thumb1').src = img;
       
@@ -148,32 +191,94 @@
         document.getElementById('productDiscount').style.display = 'inline-flex';
       }
 
-      // GESTION DES VARIANTES
       const type = product.variant_type || 'none';
-      
-      if (type !== 'none') {
-        document.getElementById('variantsContainer').style.display = 'flex';
-      }
+      if (type !== 'none') document.getElementById('variantsContainer').style.display = 'flex';
+      if (type === 'size' || type === 'size_color') document.getElementById('sizeGroup').style.display = 'block';
+      if (type === 'color' || type === 'size_color') document.getElementById('colorGroup').style.display = 'block';
+      if (type === 'weight') document.getElementById('weightGroup').style.display = 'block';
 
-      if (type === 'size' || type === 'size_color') {
-        document.getElementById('sizeGroup').style.display = 'block';
-      }
-      
-      if (type === 'color' || type === 'size_color') {
-        document.getElementById('colorGroup').style.display = 'block';
-      }
-
-      if (type === 'weight') {
-        document.getElementById('weightGroup').style.display = 'block';
-      }
-
-      // Afficher la page
       const content = document.getElementById('productContent');
       content.style.visibility = 'visible';
       content.style.opacity = '1';
+
+      // Charger les avis
+      loadReviews(productId);
     }
 
-    // Variables
+    // --- GESTION DES AVIS ---
+    async function loadReviews(productId) {
+      const { data: reviews, error } = await sb
+        .from('reviews')
+        .select('*')
+        .eq('product_id', productId)
+        .order('created_at', { ascending: false });
+
+      const list = document.getElementById('reviewsList');
+      
+      if (error || !reviews || reviews.length === 0) {
+        list.innerHTML = '<p style="color: var(--color-text-soft);">Aucun avis pour le moment. Soyez le premier à donner votre avis !</p>';
+        return;
+      }
+
+      list.innerHTML = reviews.map(r => {
+        const stars = '⭐'.repeat(r.rating);
+        return `
+          <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <strong>${r.client_name}</strong>
+              <span style="font-size: 12px; color: var(--color-text-soft);">${new Date(r.created_at).toLocaleDateString('fr-FR')}</span>
+            </div>
+            <div style="margin-bottom: 8px;">${stars}</div>
+            <p style="font-size: 14px; color: var(--color-text-soft); margin: 0;">${r.comment}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitReview');
+      btn.textContent = 'Envoi...';
+      btn.disabled = true;
+
+      const newReview = {
+        product_id: product.id,
+        client_name: document.getElementById('reviewName').value,
+        rating: parseInt(document.getElementById('reviewRating').value),
+        comment: document.getElementById('reviewComment').value
+      };
+
+      const { error } = await sb.from('reviews').insert([newReview]);
+
+      if (error) {
+        alert("Erreur lors de l'envoi de l'avis.");
+        btn.textContent = 'Publier mon avis';
+        btn.disabled = false;
+      } else {
+        document.getElementById('reviewForm').reset();
+        btn.textContent = 'Publier mon avis';
+        btn.disabled = false;
+        loadReviews(product.id); // Recharger les avis
+      }
+    });
+
+    // --- PARTAGE ---
+    window.shareProduct = function() {
+      const shareData = {
+        title: product ? product.name : 'ZemarShop',
+        text: 'Regarde ce produit sur ZemarShop !',
+        url: window.location.href
+      };
+
+      if (navigator.share) {
+        navigator.share(shareData).catch(console.error);
+      } else {
+        // Fallback pour les navigateurs qui ne supportent pas l'API Web Share
+        alert("Copiez ce lien pour partager : " + window.location.href);
+      }
+    };
+
+    // --- VARIANTES & PANIER (Inchangé) ---
     let selectedColor = 'Défaut';
     let selectedSize = 'Défaut';
 
@@ -191,31 +296,21 @@
 
     function addToCart() {
       if (!product) return;
-      
       let cart = JSON.parse(localStorage.getItem('zemar_cart') || '[]');
-      // On inclut la couleur et la taille choisies (ou "Défaut")
       const uniqueId = `${product.id}-${selectedColor}-${selectedSize}`;
       
       const existingItem = cart.find(item => item.uniqueId === uniqueId);
-      
       if (existingItem) {
         existingItem.quantity += 1;
       } else {
         cart.push({ 
-          id: product.id, 
-          uniqueId: uniqueId,
-          name: product.name,
-          price: product.price_fcfa,
-          image: product.image_url,
-          shop: product.shops?.name,
-          color: selectedColor,
-          size: selectedSize,
-          quantity: 1 
+          id: product.id, uniqueId: uniqueId, name: product.name, price: product.price_fcfa,
+          image: product.image_url, shop: product.shops?.name,
+          color: selectedColor, size: selectedSize, quantity: 1 
         });
       }
       
       localStorage.setItem('zemar_cart', JSON.stringify(cart));
-      
       const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
       localStorage.setItem('zemar_cart_count', totalItems);
       
@@ -230,13 +325,11 @@
     document.getElementById('btnAddToCart').addEventListener('click', function(e) {
       const btn = e.currentTarget;
       addToCart();
-      
       const originalText = btn.innerHTML;
       btn.innerHTML = '✓ Ajouté !';
       btn.style.backgroundColor = '#16A34A'; 
       btn.style.color = '#fff';
       btn.style.borderColor = '#16A34A';
-      
       setTimeout(() => {
         btn.innerHTML = originalText;
         btn.style.backgroundColor = '';
@@ -253,4 +346,4 @@
     init();
   </script>
 </body>
-              </html>
+</html>
